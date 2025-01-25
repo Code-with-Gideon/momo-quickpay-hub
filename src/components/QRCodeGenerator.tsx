@@ -40,10 +40,11 @@ const QRCodeGenerator = ({ onBack }: QRCodeGeneratorProps) => {
     setShowQR(true);
   };
 
-  // Create a URL-friendly JSON string for the QR code
+  // Create a URL-friendly JSON string for the QR code that includes the web app URL
   const qrData = JSON.stringify({
     type: paymentType,
     code: code,
+    redirectUrl: "https://momo-quickpay-hub.lovable.app/"
   });
 
   return (
@@ -116,13 +117,6 @@ const QRCodeGenerator = ({ onBack }: QRCodeGeneratorProps) => {
             <p className="text-sm text-gray-500 text-center">
               Scan this code with any QR scanner to make a payment
             </p>
-            <Button
-              onClick={() => setShowQR(false)}
-              variant="outline"
-              className="w-full"
-            >
-              Generate New Code
-            </Button>
           </div>
         )}
       </div>

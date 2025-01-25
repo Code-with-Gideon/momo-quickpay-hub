@@ -13,12 +13,12 @@ interface QRScannerProps {
 const QRScanner = ({ onBack }: QRScannerProps) => {
   const [isScanning, setIsScanning] = useState(false);
   const [amount, setAmount] = useState("");
-  const [scannedData, setScannedData] = useState<any>(null);
+  const [showScanner, setShowScanner] = useState(false);
   const scannerRef = useRef<Html5QrcodeScanner | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!isScanning) {
+    if (showScanner && !isScanning) {
       scannerRef.current = new Html5QrcodeScanner(
         "reader",
         { fps: 10, qrbox: { width: 250, height: 250 } },
@@ -34,15 +34,21 @@ const QRScanner = ({ onBack }: QRScannerProps) => {
         scannerRef.current.clear();
       }
     };
-  }, []);
+  }, [showScanner]);
 
   const onScanSuccess = (decodedText: string) => {
     try {
       const data = JSON.parse(decodedText);
-      setScannedData(data);
-      if (scannerRef.current) {
-        scannerRef.current.clear();
+      if (!amount) {
+        toast.error("Please enter an amount first");
+        return;
       }
+
+      const ussdCode = data.type === "account"
+        ? `tel:*182*1*1*${data.code}*${amount}%23`
+        : `tel:*182*8*1*${data.code}*${amount}%23`;
+
+      window.location.href = ussdCode;
     } catch (error) {
       toast.error("Invalid QR code");
     }
@@ -52,14 +58,9 @@ const QRScanner = ({ onBack }: QRScannerProps) => {
     console.error("QR scan error:", error);
   };
 
-  const handleProceed = () => {
+  const handleStartScanning = () => {
     if (!amount) {
-      toast.error("Please enter an amount");
-      return;
-    }
-
-    if (!scannedData) {
-      toast.error("Please scan a QR code first");
+      toast.error("Please enter an amount first");
       return;
     }
 
@@ -68,11 +69,7 @@ const QRScanner = ({ onBack }: QRScannerProps) => {
       return;
     }
 
-    const ussdCode = scannedData.type === "account"
-      ? `tel:*182*1*1*${scannedData.code}*${amount}%23`
-      : `tel:*182*8*1*${scannedData.code}*${amount}%23`;
-
-    window.location.href = ussdCode;
+    setShowScanner(true);
   };
 
   return (
@@ -86,15 +83,8 @@ const QRScanner = ({ onBack }: QRScannerProps) => {
         Back
       </Button>
 
-      {scannedData ? (
+      {!showScanner ? (
         <div className="space-y-4">
-          <div className="p-4 bg-gray-50 rounded-lg">
-            <p className="text-sm text-gray-600">
-              {scannedData.type === "account" ? "Account Number" : "MomoPay Code"}:
-            </p>
-            <p className="font-medium">{scannedData.code}</p>
-          </div>
-
           <div>
             <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-1">
               Amount (RWF)
@@ -110,10 +100,10 @@ const QRScanner = ({ onBack }: QRScannerProps) => {
           </div>
 
           <Button
-            onClick={handleProceed}
+            onClick={handleStartScanning}
             className="w-full bg-mtn-yellow hover:bg-mtn-yellow/90 text-mtn-blue"
           >
-            Proceed to Payment
+            Start Scanning
           </Button>
         </div>
       ) : (
