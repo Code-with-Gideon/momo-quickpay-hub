@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { ScanIcon, Smartphone, QrCode } from "lucide-react";
+import { ScanIcon, Smartphone, QrCode, QrCodeIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import NumberInput from "@/components/NumberInput";
 import QRScanner from "@/components/QRScanner";
 import MomoPayInput from "@/components/MomoPayInput";
+import QRCodeGenerator from "@/components/QRCodeGenerator";
 
-type PaymentMethod = "none" | "qr" | "number" | "momopay";
+type PaymentMethod = "none" | "qr" | "number" | "momopay" | "generate";
 
 const Index = () => {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("none");
@@ -18,6 +19,8 @@ const Index = () => {
         return <NumberInput onBack={() => setPaymentMethod("none")} />;
       case "momopay":
         return <MomoPayInput onBack={() => setPaymentMethod("none")} />;
+      case "generate":
+        return <QRCodeGenerator onBack={() => setPaymentMethod("none")} />;
       default:
         return (
           <div className="space-y-4">
@@ -43,6 +46,14 @@ const Index = () => {
             >
               <QrCode className="w-6 h-6" />
               MomoPay Code
+            </Button>
+
+            <Button
+              onClick={() => setPaymentMethod("generate")}
+              className="w-full h-20 text-lg bg-white hover:bg-gray-100 text-mtn-blue flex items-center justify-center gap-3"
+            >
+              <QrCodeIcon className="w-6 h-6" />
+              Generate Payment QR
             </Button>
           </div>
         );
