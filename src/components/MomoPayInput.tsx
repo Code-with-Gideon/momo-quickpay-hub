@@ -4,24 +4,24 @@ import { Input } from "@/components/ui/input";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 
-interface NumberInputProps {
+interface MomoPayInputProps {
   onBack: () => void;
 }
 
-const NumberInput = ({ onBack }: NumberInputProps) => {
-  const [number, setNumber] = useState("");
+const MomoPayInput = ({ onBack }: MomoPayInputProps) => {
+  const [code, setCode] = useState("");
   const [amount, setAmount] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!number || !amount) {
+    if (!code || !amount) {
       toast.error("Please fill in all fields");
       return;
     }
 
-    if (!/^07\d{8}$/.test(number)) {
-      toast.error("Please enter a valid Rwanda phone number");
+    if (!/^\d+$/.test(code)) {
+      toast.error("Please enter a valid MomoPay code");
       return;
     }
 
@@ -30,7 +30,7 @@ const NumberInput = ({ onBack }: NumberInputProps) => {
       return;
     }
 
-    const ussdCode = `tel:*182*1*1*${number}*${amount}%23`;
+    const ussdCode = `tel:*182*8*1*${code}*${amount}%23`;
     window.location.href = ussdCode;
   };
 
@@ -47,15 +47,15 @@ const NumberInput = ({ onBack }: NumberInputProps) => {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-            Phone Number
+          <label htmlFor="code" className="block text-sm font-medium text-gray-700 mb-1">
+            MomoPay Code
           </label>
           <Input
-            id="phone"
-            type="tel"
-            placeholder="07xxxxxxxx"
-            value={number}
-            onChange={(e) => setNumber(e.target.value)}
+            id="code"
+            type="text"
+            placeholder="Enter MomoPay code"
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
             className="w-full"
           />
         </div>
@@ -78,11 +78,11 @@ const NumberInput = ({ onBack }: NumberInputProps) => {
           type="submit"
           className="w-full bg-mtn-yellow hover:bg-mtn-yellow/90 text-mtn-blue"
         >
-          Continue to Payment
+          Pay with MomoPay
         </Button>
       </form>
     </div>
   );
 };
 
-export default NumberInput;
+export default MomoPayInput;

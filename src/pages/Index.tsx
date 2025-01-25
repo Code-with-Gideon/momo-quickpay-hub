@@ -1,22 +1,52 @@
 import { useState } from "react";
-import { ScanIcon, Smartphone } from "lucide-react";
+import { ScanIcon, Smartphone, QrCode } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
 import NumberInput from "@/components/NumberInput";
+import QRScanner from "@/components/QRScanner";
+import MomoPayInput from "@/components/MomoPayInput";
+
+type PaymentMethod = "none" | "qr" | "number" | "momopay";
 
 const Index = () => {
-  const [showNumberInput, setShowNumberInput] = useState(false);
-  const defaultNumber = "0780000000"; // Replace with actual default number
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("none");
 
-  const handleQRScan = () => {
-    // In a real app, this would open the camera for QR scanning
-    toast.info("QR scanning would open camera in production");
-    dialUSSD(defaultNumber);
-  };
+  const renderContent = () => {
+    switch (paymentMethod) {
+      case "qr":
+        return <QRScanner onBack={() => setPaymentMethod("none")} />;
+      case "number":
+        return <NumberInput onBack={() => setPaymentMethod("none")} />;
+      case "momopay":
+        return <MomoPayInput onBack={() => setPaymentMethod("none")} />;
+      default:
+        return (
+          <div className="space-y-4">
+            <Button
+              onClick={() => setPaymentMethod("qr")}
+              className="w-full h-20 text-lg bg-mtn-yellow hover:bg-mtn-yellow/90 text-mtn-blue flex items-center justify-center gap-3"
+            >
+              <ScanIcon className="w-6 h-6" />
+              Scan QR Code
+            </Button>
+            
+            <Button
+              onClick={() => setPaymentMethod("number")}
+              className="w-full h-20 text-lg bg-white hover:bg-gray-100 text-mtn-blue flex items-center justify-center gap-3"
+            >
+              <Smartphone className="w-6 h-6" />
+              Enter Number
+            </Button>
 
-  const dialUSSD = (phoneNumber: string) => {
-    const ussdCode = `tel:*182*1*1*${phoneNumber}%23`;
-    window.location.href = ussdCode;
+            <Button
+              onClick={() => setPaymentMethod("momopay")}
+              className="w-full h-20 text-lg bg-white hover:bg-gray-100 text-mtn-blue flex items-center justify-center gap-3"
+            >
+              <QrCode className="w-6 h-6" />
+              MomoPay Code
+            </Button>
+          </div>
+        );
+    }
   };
 
   return (
@@ -26,30 +56,7 @@ const Index = () => {
           Rwanda MOMO Pay
         </h1>
         
-        {!showNumberInput ? (
-          <div className="space-y-6">
-            <Button
-              onClick={handleQRScan}
-              className="w-full h-20 text-lg bg-mtn-yellow hover:bg-mtn-yellow/90 text-mtn-blue flex items-center justify-center gap-3"
-            >
-              <ScanIcon className="w-6 h-6" />
-              Scan QR Code
-            </Button>
-            
-            <Button
-              onClick={() => setShowNumberInput(true)}
-              className="w-full h-20 text-lg bg-white hover:bg-gray-100 text-mtn-blue flex items-center justify-center gap-3"
-            >
-              <Smartphone className="w-6 h-6" />
-              Enter Number
-            </Button>
-          </div>
-        ) : (
-          <NumberInput 
-            onBack={() => setShowNumberInput(false)}
-            onSubmit={dialUSSD}
-          />
-        )}
+        {renderContent()}
       </div>
     </div>
   );
