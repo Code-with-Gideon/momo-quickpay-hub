@@ -40,6 +40,7 @@ const QRCodeGenerator = ({ onBack }: QRCodeGeneratorProps) => {
     setShowQR(true);
   };
 
+  // Create a URL-friendly JSON string for the QR code
   const qrData = JSON.stringify({
     type: paymentType,
     code: code,
@@ -113,8 +114,15 @@ const QRCodeGenerator = ({ onBack }: QRCodeGeneratorProps) => {
               <QRCodeSVG value={qrData} size={200} />
             </div>
             <p className="text-sm text-gray-500 text-center">
-              Scan this code to make a payment
+              Scan this code with any QR scanner to make a payment
             </p>
+            <Button
+              onClick={() => setShowQR(false)}
+              variant="outline"
+              className="w-full"
+            >
+              Generate New Code
+            </Button>
           </div>
         )}
       </div>
