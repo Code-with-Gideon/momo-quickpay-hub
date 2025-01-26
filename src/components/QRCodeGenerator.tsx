@@ -32,6 +32,35 @@ const QRCodeGenerator = ({ onBack }: QRCodeGeneratorProps) => {
         Back
       </Button>
 
+      <h2 className="text-lg font-medium text-gray-900 mb-4">Payment Type</h2>
+
+      <div className="flex gap-3 mb-6">
+        <Button
+          type="button"
+          onClick={() => setType("account")}
+          variant={type === "account" ? "default" : "outline"}
+          className={`flex-1 ${
+            type === "account"
+              ? "bg-mtn-yellow text-mtn-blue hover:bg-mtn-yellow/90"
+              : ""
+          }`}
+        >
+          Account Number
+        </Button>
+        <Button
+          type="button"
+          onClick={() => setType("momopay")}
+          variant={type === "momopay" ? "default" : "outline"}
+          className={`flex-1 ${
+            type === "momopay"
+              ? "bg-mtn-yellow text-mtn-blue hover:bg-mtn-yellow/90"
+              : ""
+          }`}
+        >
+          MomoPay Code
+        </Button>
+      </div>
+
       <div className="space-y-6">
         <div>
           <label htmlFor="code" className="block text-sm font-medium text-gray-700 mb-1">
@@ -40,37 +69,22 @@ const QRCodeGenerator = ({ onBack }: QRCodeGeneratorProps) => {
           <Input
             id="code"
             type="text"
-            placeholder={`Enter ${type === "account" ? "account number" : "MomoPay code"}`}
+            placeholder={`Enter ${
+              type === "account" ? "account number (07xxxxxxxx)" : "MomoPay code"
+            }`}
             value={code}
             onChange={(e) => setCode(e.target.value)}
             className="w-full"
           />
         </div>
 
-        <div className="flex gap-3">
-          <Button
-            type="button"
-            onClick={() => setType("account")}
-            className={`flex-1 ${
-              type === "account"
-                ? "bg-mtn-yellow text-mtn-blue hover:bg-mtn-yellow/90"
-                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-            }`}
-          >
-            Account Number
-          </Button>
-          <Button
-            type="button"
-            onClick={() => setType("momopay")}
-            className={`flex-1 ${
-              type === "momopay"
-                ? "bg-mtn-yellow text-mtn-blue hover:bg-mtn-yellow/90"
-                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-            }`}
-          >
-            MomoPay Code
-          </Button>
-        </div>
+        <Button
+          type="button"
+          onClick={() => {}}
+          className="w-full bg-mtn-yellow text-mtn-blue hover:bg-mtn-yellow/90"
+        >
+          Generate QR Code
+        </Button>
 
         {code && (
           <div className="flex justify-center mt-6">
