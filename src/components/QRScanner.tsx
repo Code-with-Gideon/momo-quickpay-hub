@@ -1,116 +1,131 @@
-import { useEffect, useRef, useState } from "react";
-import { Html5QrcodeScanner } from "html5-qrcode";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { ArrowLeft } from "lucide-react";
-import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
+import React, { useState } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Linking } from 'react-native';
+import { RNCamera } from 'react-native-camera';
+import { ArrowLeft } from 'lucide-react-native';
 
-interface QRScannerProps {
-  onBack: () => void;
-}
-
-const QRScanner = ({ onBack }: QRScannerProps) => {
+const QRScanner = ({ navigation }) => {
+  const [amount, setAmount] = useState('');
   const [isScanning, setIsScanning] = useState(false);
-  const [amount, setAmount] = useState("");
-  const [showScanner, setShowScanner] = useState(false);
-  const scannerRef = useRef<Html5QrcodeScanner | null>(null);
-  const navigate = useNavigate();
 
-  useEffect(() => {
-    if (showScanner && !isScanning) {
-      scannerRef.current = new Html5QrcodeScanner(
-        "reader",
-        { fps: 10, qrbox: { width: 250, height: 250 } },
-        false
-      );
-
-      scannerRef.current.render(onScanSuccess, onScanFailure);
-      setIsScanning(true);
-    }
-
-    return () => {
-      if (scannerRef.current) {
-        scannerRef.current.clear();
-      }
-    };
-  }, [showScanner]);
-
-  const onScanSuccess = (decodedText: string) => {
+  const handleBarCodeScanned = ({ data }) => {
     try {
-      const data = JSON.parse(decodedText);
+      const parsedData = JSON.parse(data);
       if (!amount) {
-        toast.error("Please enter an amount first");
+        alert('Please enter an amount first');
         return;
       }
 
-      const ussdCode = data.type === "account"
-        ? `tel:*182*1*1*${data.code}*${amount}%23`
-        : `tel:*182*8*1*${data.code}*${amount}%23`;
+      const ussdCode = parsedData.type === 'account'
+        ? `tel:*182*1*1*${parsedData.code}*${amount}%23`
+        : `tel:*182*8*1*${parsedData.code}*${amount}%23`;
 
-      window.location.href = ussdCode;
+      Linking.openURL(ussdCode);
     } catch (error) {
-      toast.error("Invalid QR code");
+      alert('Invalid QR code');
     }
-  };
-
-  const onScanFailure = (error: string) => {
-    console.error("QR scan error:", error);
   };
 
   const handleStartScanning = () => {
     if (!amount) {
-      toast.error("Please enter an amount first");
+      alert('Please enter an amount first');
       return;
     }
 
     if (!/^\d+$/.test(amount)) {
-      toast.error("Please enter a valid amount");
+      alert('Please enter a valid amount');
       return;
     }
 
-    setShowScanner(true);
+    setIsScanning(true);
   };
 
   return (
-    <div className="bg-white rounded-lg p-6 shadow-lg">
-      <Button
-        variant="ghost"
-        onClick={onBack}
-        className="mb-4 text-mtn-blue hover:text-mtn-blue/80"
+    <View style={styles.container}>
+      <TouchableOpacity
+        style={styles.backButton}
+        onPress={() => navigation.goBack()}
       >
-        <ArrowLeft className="w-4 h-4 mr-2" />
-        Back
-      </Button>
+        <ArrowLeft size={20} color="#003366" />
+        <Text style={styles.backButtonText}>Back</Text>
+      </TouchableOpacity>
 
-      {!showScanner ? (
-        <div className="space-y-4">
-          <div>
-            <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-1">
-              Amount (RWF)
-            </label>
-            <Input
-              id="amount"
-              type="number"
-              placeholder="Enter amount"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              className="w-full"
-            />
-          </div>
-
-          <Button
-            onClick={handleStartScanning}
-            className="w-full bg-mtn-yellow hover:bg-mtn-yellow/90 text-mtn-blue"
+      {!isScanning ? (
+        <View style={styles.inputContainer}>
+          <Text style={styles.label}>Amount (RWF)</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Enter amount"
+            value={amount}
+            onChangeText={setAmount}
+            keyboardType="numeric"
+          />
+          <TouchableOpacity
+            style={styles.scanButton}
+            onPress={handleStartScanning}
           >
-            Start Scanning
-          </Button>
-        </div>
+            <Text style={styles.scanButtonText}>Start Scanning</Text>
+          </TouchableOpacity>
+        </View>
       ) : (
-        <div id="reader" className="w-full"></div>
+        <RNCamera
+          style={styles.camera}
+          onBarCodeRead={handleBarCodeScanned}
+          captureAudio={false}
+        />
       )}
-    </div>
+    </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: 'white',
+    padding: 16,
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  backButtonText: {
+    marginLeft: 8,
+    color: '#003366',
+    fontSize: 16,
+  },
+  inputContainer: {
+    gap: 16,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#4B5563',
+    marginBottom: 4,
+  },
+  input: {
+    height: 40,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    fontSize: 16,
+  },
+  scanButton: {
+    backgroundColor: '#FFCB05',
+    height: 48,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scanButtonText: {
+    color: '#003366',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  camera: {
+    flex: 1,
+    borderRadius: 8,
+  },
+});
 
 export default QRScanner;
