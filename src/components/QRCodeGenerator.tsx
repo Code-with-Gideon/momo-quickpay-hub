@@ -20,18 +20,17 @@ const QRCodeGenerator = ({ onBack }: QRCodeGeneratorProps) => {
   const [paymentType, setPaymentType] = useState<"account" | "momopay">("account");
   const [code, setCode] = useState("");
   const [showQR, setShowQR] = useState(false);
-  const [amount, setAmount] = useState("");
-
+  // const [amount, setAmount] = useState("");
   const handleGenerate = () => {
     if (!code) {
       toast.error("Please enter a your Account number or Momopay code");
       return;
     }
 
-    if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
-    toast.error("Please enter a valid amount");
-    return;
-  }
+  //   if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
+  //   toast.error("Please enter a valid amount");
+  //   return;
+  // }
 
     if (paymentType === "account" && !/^07\d{8}$/.test(code)) {
       toast.error("Please enter a valid Rwanda phone number");
