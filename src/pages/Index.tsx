@@ -6,10 +6,12 @@ import NumberInput from '@/components/NumberInput';
 import MomoPayInput from '@/components/MomoPayInput';
 import QRCodeGenerator from '@/components/QRCodeGenerator';
 
+type PaymentMethod = "none" | "qr" | "number" | "momopay" | "generate";
+
 const HomeScreen = () => {
   const navigate = useNavigate();
 
-  const navigateToScreen = (screen: "qr" | "number" | "momopay" | "generate") => {
+  const navigateToScreen = (screen: PaymentMethod) => {
     switch (screen) {
       case "qr":
         navigate('/scanner');
@@ -71,15 +73,13 @@ const HomeScreen = () => {
 
 const App = () => {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<HomeScreen />} />
-        <Route path="/scanner" element={<QRScanner />} />
-        <Route path="/number" element={<NumberInput onBack={() => window.history.back()} />} />
-        <Route path="/momopay" element={<MomoPayInput onBack={() => window.history.back()} />} />
-        <Route path="/generate" element={<QRCodeGenerator />} />
-      </Routes>
-    </BrowserRouter>
+    <Routes>
+      <Route path="/" element={<HomeScreen />} />
+      <Route path="/scanner" element={<QRScanner />} />
+      <Route path="/number" element={<NumberInput onBack={() => window.history.back()} />} />
+      <Route path="/momopay" element={<MomoPayInput onBack={() => window.history.back()} />} />
+      <Route path="/generate" element={<QRCodeGenerator />} />
+    </Routes>
   );
 };
 
