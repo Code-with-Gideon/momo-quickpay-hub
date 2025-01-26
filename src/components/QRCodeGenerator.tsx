@@ -3,23 +3,56 @@ import { QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowLeft } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { toast } from "sonner";
 
 interface QRCodeGeneratorProps {
   onBack: () => void;
 }
 
 const QRCodeGenerator = ({ onBack }: QRCodeGeneratorProps) => {
+  const [paymentType, setPaymentType] = useState<"account" | "momopay">("account");
   const [code, setCode] = useState("");
-  const [type, setType] = useState<"account" | "momopay">("account");
+  const [showQR, setShowQR] = useState(false);
+  const [amount, setAmount] = useState("");
 
-  const generateQRData = () => {
-    const data = {
-      type,
-      code,
-      redirectUrl: "https://momo-quickpay-hub.lovable.app/",
-    };
-    return JSON.stringify(data);
+  const handleGenerate = () => {
+    if (!code) {
+      toast.error("Please enter a your Account number or Momopay code");
+      return;
+    }
+
+    if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
+    toast.error("Please enter a valid amount");
+    return;
+  }
+
+    if (paymentType === "account" && !/^07\d{8}$/.test(code)) {
+      toast.error("Please enter a valid Rwanda phone number");
+      return;
+    }
+
+    if (paymentType === "momopay" && !/^\d+$/.test(code)) {
+      toast.error("Please enter a valid MomoPay code");
+      return;
+    }
+
+    setShowQR(true);
+
   };
+
+  // Create a URL-friendly JSON string for the QR code that includes the web app URL
+  const qrData = JSON.stringify({
+    type: paymentType,
+    code: code,
+    redirectUrl: "https://momo-quickpay-hub.lovable.app/"
+  });
 
   return (
     <div className="bg-white rounded-lg p-6 shadow-lg">
@@ -32,63 +65,78 @@ const QRCodeGenerator = ({ onBack }: QRCodeGeneratorProps) => {
         Back
       </Button>
 
-      <h2 className="text-lg font-medium text-gray-900 mb-4">Payment Type</h2>
-
-      <div className="flex gap-3 mb-6">
-        <Button
-          type="button"
-          onClick={() => setType("account")}
-          variant={type === "account" ? "default" : "outline"}
-          className={`flex-1 ${
-            type === "account"
-              ? "bg-mtn-yellow text-mtn-blue hover:bg-mtn-yellow/90"
-              : ""
-          }`}
-        >
-          Account Number
-        </Button>
-        <Button
-          type="button"
-          onClick={() => setType("momopay")}
-          variant={type === "momopay" ? "default" : "outline"}
-          className={`flex-1 ${
-            type === "momopay"
-              ? "bg-mtn-yellow text-mtn-blue hover:bg-mtn-yellow/90"
-              : ""
-          }`}
-        >
-          MomoPay Code
-        </Button>
-      </div>
-
-      <div className="space-y-6">
+      <div className="space-y-4">
         <div>
-          <label htmlFor="code" className="block text-sm font-medium text-gray-700 mb-1">
-            {type === "account" ? "Account Number" : "MomoPay Code"}
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Payment Type
           </label>
-          <Input
-            id="code"
-            type="text"
-            placeholder={`Enter ${
-              type === "account" ? "account number (07xxxxxxxx)" : "MomoPay code"
-            }`}
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-            className="w-full"
-          />
+          <Select
+            value={paymentType}
+            onValueChange={(value: "account" | "momopay") => {
+              setPaymentType(value);
+              setCode("");
+              setShowQR(false);
+            }}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select payment type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="account">Account Number</SelectItem>
+              <SelectItem value="momopay">MomoPay Code</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
-        <Button
-          type="button"
-          onClick={() => {}}
-          className="w-full bg-mtn-yellow text-mtn-blue hover:bg-mtn-yellow/90"
-        >
-          Generate QR Code
-        </Button>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            {paymentType === "account" ? "Account Number" : "MomoPay Code"}
+          </label>
+          <Input
+            type="text"
+            placeholder={
+              paymentType === "account"
+                ? "Enter account number (07xxxxxxxx)"
+                : "Enter MomoPay code"
+            }
+            value={code}
+            onChange={(e) => {
+              setCode(e.target.value);
+              setShowQR(false);
+            }}
+          />
+        </div>
+        {/* <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Amount
+          </label>
+          <Input
+            type="text"
+            placeholder="Enter amount"
+            value={amount}
+            onChange={(e) => {
+              setAmount(e.target.value);
+              setShowQR(false);
+            }}
+          />
+        </div> */}
+        {!showQR && (
+          <Button
+            onClick={handleGenerate}
+            className="w-full bg-mtn-yellow hover:bg-mtn-yellow/90 text-mtn-blue"
+          >
+            Generate QR Code
+          </Button>
+        )}
 
-        {code && (
-          <div className="flex justify-center mt-6">
-            <QRCodeSVG value={generateQRData()} size={200} />
+        {showQR && (
+          <div className="flex flex-col items-center space-y-4">
+            <div className="bg-white p-4 rounded-lg shadow">
+              <QRCodeSVG value={qrData} size={200} />
+            </div>
+            <p className="text-sm text-gray-500 text-center">
+              Scan this code with any QR scanner to make a payment
+            </p>
           </div>
         )}
       </div>
