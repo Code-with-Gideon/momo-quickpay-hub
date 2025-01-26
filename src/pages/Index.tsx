@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { ScanIcon, Smartphone, QrCode, QrCodeIcon } from 'lucide-react-native';
 import { NavigationContainer } from '@react-navigation/native';
@@ -73,7 +73,7 @@ const HomeScreen = ({ navigation }) => {
 
 const App = () => {
   return (
-    <NavigationContainer>
+    <NavigationContainer independent={true}>
       <Stack.Navigator>
         <Stack.Screen 
           name="Home" 
