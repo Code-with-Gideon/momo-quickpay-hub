@@ -1,135 +1,75 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { ScanIcon, Smartphone, QrCode, QrCodeIcon } from 'lucide-react-native';
-import { NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import QRScanner from '@/components/QRScanner';
-import NumberInput from '@/components/NumberInput';
-import MomoPayInput from '@/components/MomoPayInput';
-import QRCodeGenerator from '@/components/QRCodeGenerator';
+import { useState } from "react";
+import { QrCode, Smartphone, ScanLine, QrCodeIcon } from "lucide-react";
+import NumberInput from "@/components/NumberInput";
+import MomoPayInput from "@/components/MomoPayInput";
+import QRScanner from "@/components/QRScanner";
+import QRCodeGenerator from "@/components/QRCodeGenerator";
 
 type PaymentMethod = "none" | "qr" | "number" | "momopay" | "generate";
 
-const Stack = createNativeStackNavigator();
+const Index = () => {
+  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>("none");
 
-const HomeScreen = ({ navigation }) => {
-  const navigateToScreen = (screen: PaymentMethod) => {
-    switch (screen) {
+  const renderContent = () => {
+    switch (selectedMethod) {
       case "qr":
-        navigation.navigate('QRScanner');
-        break;
+        return <QRScanner onBack={() => setSelectedMethod("none")} />;
       case "number":
-        navigation.navigate('NumberInput');
-        break;
+        return <NumberInput onBack={() => setSelectedMethod("none")} />;
       case "momopay":
-        navigation.navigate('MomoPayInput');
-        break;
+        return <MomoPayInput onBack={() => setSelectedMethod("none")} />;
       case "generate":
-        navigation.navigate('QRCodeGenerator');
-        break;
+        return <QRCodeGenerator onBack={() => setSelectedMethod("none")} />;
+      default:
+        return null;
     }
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Rwanda MOMO Pay</Text>
-      
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity
-          style={[styles.button, styles.primaryButton]}
-          onPress={() => navigateToScreen("qr")}
-        >
-          <ScanIcon size={24} color="#003366" />
-          <Text style={styles.primaryButtonText}>Scan QR Code</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity
-          style={[styles.button, styles.secondaryButton]}
-          onPress={() => navigateToScreen("number")}
-        >
-          <Smartphone size={24} color="#003366" />
-          <Text style={styles.buttonText}>Enter Number</Text>
-        </TouchableOpacity>
+    <div className="min-h-screen bg-mtn-blue p-4">
+      <h1 className="text-2xl font-bold text-white text-center mt-10 mb-8">
+        Rwanda MOMO Pay
+      </h1>
 
-        <TouchableOpacity
-          style={[styles.button, styles.secondaryButton]}
-          onPress={() => navigateToScreen("momopay")}
-        >
-          <QrCode size={24} color="#003366" />
-          <Text style={styles.buttonText}>MomoPay Code</Text>
-        </TouchableOpacity>
+      {selectedMethod === "none" ? (
+        <div className="space-y-4">
+          <button
+            onClick={() => setSelectedMethod("qr")}
+            className="w-full h-20 bg-mtn-yellow rounded-lg flex items-center justify-center gap-3 hover:bg-mtn-yellow/90 transition-colors"
+          >
+            <ScanLine className="w-6 h-6 text-mtn-blue" />
+            <span className="text-lg font-semibold text-mtn-blue">Scan QR Code</span>
+          </button>
 
-        <TouchableOpacity
-          style={[styles.button, styles.secondaryButton]}
-          onPress={() => navigateToScreen("generate")}
-        >
-          <QrCodeIcon size={24} color="#003366" />
-          <Text style={styles.buttonText}>Generate Payment QR</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+          <button
+            onClick={() => setSelectedMethod("number")}
+            className="w-full h-20 bg-white rounded-lg flex items-center justify-center gap-3 hover:bg-gray-100 transition-colors"
+          >
+            <Smartphone className="w-6 h-6 text-mtn-blue" />
+            <span className="text-lg font-medium text-mtn-blue">Enter Number</span>
+          </button>
+
+          <button
+            onClick={() => setSelectedMethod("momopay")}
+            className="w-full h-20 bg-white rounded-lg flex items-center justify-center gap-3 hover:bg-gray-100 transition-colors"
+          >
+            <QrCode className="w-6 h-6 text-mtn-blue" />
+            <span className="text-lg font-medium text-mtn-blue">MomoPay Code</span>
+          </button>
+
+          <button
+            onClick={() => setSelectedMethod("generate")}
+            className="w-full h-20 bg-white rounded-lg flex items-center justify-center gap-3 hover:bg-gray-100 transition-colors"
+          >
+            <QrCodeIcon className="w-6 h-6 text-mtn-blue" />
+            <span className="text-lg font-medium text-mtn-blue">Generate Payment QR</span>
+          </button>
+        </div>
+      ) : (
+        renderContent()
+      )}
+    </div>
   );
 };
 
-const App = () => {
-  return (
-    <NavigationContainer>
-      <Stack.Navigator>
-        <Stack.Screen 
-          name="Home" 
-          component={HomeScreen}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen name="QRScanner" component={QRScanner} />
-        <Stack.Screen name="NumberInput" component={NumberInput} />
-        <Stack.Screen name="MomoPayInput" component={MomoPayInput} />
-        <Stack.Screen name="QRCodeGenerator" component={QRCodeGenerator} />
-      </Stack.Navigator>
-    </NavigationContainer>
-  );
-};
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#003366',
-    padding: 16,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: 'white',
-    textAlign: 'center',
-    marginTop: 40,
-    marginBottom: 32,
-  },
-  buttonContainer: {
-    gap: 16,
-  },
-  button: {
-    height: 80,
-    borderRadius: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 12,
-  },
-  primaryButton: {
-    backgroundColor: '#FFCB05',
-  },
-  secondaryButton: {
-    backgroundColor: 'white',
-  },
-  buttonText: {
-    fontSize: 18,
-    color: '#003366',
-    fontWeight: '500',
-  },
-  primaryButtonText: {
-    fontSize: 18,
-    color: '#003366',
-    fontWeight: '600',
-  },
-});
-
-export default App;
+export default Index;
