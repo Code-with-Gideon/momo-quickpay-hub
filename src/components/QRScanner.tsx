@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Linking } from 'react-native';
-import { RNCamera } from 'react-native-camera';
-import { ArrowLeft } from 'lucide-react-native';
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
+import { Html5QrcodeScanner } from 'html5-qrcode';
 
-const QRScanner = ({ navigation }) => {
+const QRScanner = () => {
   const [amount, setAmount] = useState('');
   const [isScanning, setIsScanning] = useState(false);
+  const navigate = useNavigate();
 
-  const handleBarCodeScanned = ({ data }) => {
+  const handleBarCodeScanned = (data: string) => {
     try {
       const parsedData = JSON.parse(data);
       if (!amount) {
@@ -19,7 +20,7 @@ const QRScanner = ({ navigation }) => {
         ? `tel:*182*1*1*${parsedData.code}*${amount}%23`
         : `tel:*182*8*1*${parsedData.code}*${amount}%23`;
 
-      Linking.openURL(ussdCode);
+      window.location.href = ussdCode;
     } catch (error) {
       alert('Invalid QR code');
     }
@@ -37,95 +38,57 @@ const QRScanner = ({ navigation }) => {
     }
 
     setIsScanning(true);
+    const html5QrcodeScanner = new Html5QrcodeScanner(
+      "qr-reader",
+      { fps: 10, qrbox: { width: 250, height: 250 } },
+      false
+    );
+    
+    html5QrcodeScanner.render(
+      (data) => {
+        handleBarCodeScanned(data);
+        html5QrcodeScanner.clear();
+      },
+      (error) => {
+        console.error(error);
+      }
+    );
   };
 
   return (
-    <View style={styles.container}>
-      <TouchableOpacity
-        style={styles.backButton}
-        onPress={() => navigation.goBack()}
+    <div className="min-h-screen bg-white p-4">
+      <button
+        className="flex items-center mb-4 text-[#003366]"
+        onClick={() => navigate(-1)}
       >
-        <ArrowLeft size={20} color="#003366" />
-        <Text style={styles.backButtonText}>Back</Text>
-      </TouchableOpacity>
+        <ArrowLeft size={20} />
+        <span className="ml-2">Back</span>
+      </button>
 
       {!isScanning ? (
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Amount (RWF)</Text>
-          <TextInput
-            style={styles.input}
+        <div className="space-y-4">
+          <label className="block text-sm font-medium text-gray-600">
+            Amount (RWF)
+          </label>
+          <input
+            type="number"
             placeholder="Enter amount"
             value={amount}
-            onChangeText={setAmount}
-            keyboardType="numeric"
+            onChange={(e) => setAmount(e.target.value)}
+            className="w-full p-2 border border-gray-300 rounded-lg"
           />
-          <TouchableOpacity
-            style={styles.scanButton}
-            onPress={handleStartScanning}
+          <button
+            onClick={handleStartScanning}
+            className="w-full h-12 bg-[#FFCB05] rounded-lg text-[#003366] font-semibold"
           >
-            <Text style={styles.scanButtonText}>Start Scanning</Text>
-          </TouchableOpacity>
-        </View>
+            Start Scanning
+          </button>
+        </div>
       ) : (
-        <RNCamera
-          style={styles.camera}
-          onBarCodeRead={handleBarCodeScanned}
-          captureAudio={false}
-        />
+        <div id="qr-reader" className="w-full" />
       )}
-    </View>
+    </div>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: 'white',
-    padding: 16,
-  },
-  backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  backButtonText: {
-    marginLeft: 8,
-    color: '#003366',
-    fontSize: 16,
-  },
-  inputContainer: {
-    gap: 16,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#4B5563',
-    marginBottom: 4,
-  },
-  input: {
-    height: 40,
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    fontSize: 16,
-  },
-  scanButton: {
-    backgroundColor: '#FFCB05',
-    height: 48,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  scanButtonText: {
-    color: '#003366',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  camera: {
-    flex: 1,
-    borderRadius: 8,
-  },
-});
 
 export default QRScanner;
