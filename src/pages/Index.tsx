@@ -1,73 +1,75 @@
 import { useState } from "react";
-import { QrCode, Smartphone, ScanLine, QrCodeIcon } from "lucide-react";
+import { ScanIcon, Smartphone, QrCode, QrCodeIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import NumberInput from "@/components/NumberInput";
-import MomoPayInput from "@/components/MomoPayInput";
 import QRScanner from "@/components/QRScanner";
+import MomoPayInput from "@/components/MomoPayInput";
 import QRCodeGenerator from "@/components/QRCodeGenerator";
 
 type PaymentMethod = "none" | "qr" | "number" | "momopay" | "generate";
 
 const Index = () => {
-  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>("none");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("none");
 
   const renderContent = () => {
-    switch (selectedMethod) {
+    switch (paymentMethod) {
       case "qr":
-        return <QRScanner onBack={() => setSelectedMethod("none")} />;
+        return <QRScanner onBack={() => setPaymentMethod("none")} />;
       case "number":
-        return <NumberInput onBack={() => setSelectedMethod("none")} />;
+        return <NumberInput onBack={() => setPaymentMethod("none")} />;
       case "momopay":
-        return <MomoPayInput onBack={() => setSelectedMethod("none")} />;
+        return <MomoPayInput onBack={() => setPaymentMethod("none")} />;
       case "generate":
-        return <QRCodeGenerator onBack={() => setSelectedMethod("none")} />;
+        return <QRCodeGenerator onBack={() => setPaymentMethod("none")} />;
       default:
-        return null;
+        return (
+          <div className="space-y-4">
+            <Button
+              onClick={() => setPaymentMethod("qr")}
+              className="w-full h-20 text-lg bg-mtn-yellow hover:bg-mtn-yellow/90 text-mtn-blue flex items-center justify-center gap-3"
+            >
+              <ScanIcon className="w-6 h-6" />
+              Scan Payment QR Code
+            </Button>
+            
+            <Button
+              onClick={() => setPaymentMethod("number")}
+              className="w-full h-20 text-lg bg-white hover:bg-gray-100 text-mtn-blue flex items-center justify-center gap-3"
+            >
+              <Smartphone className="w-6 h-6" />
+              Enter Account Number
+            </Button>
+
+            <Button
+              onClick={() => setPaymentMethod("momopay")}
+              className="w-full h-20 text-lg bg-white hover:bg-gray-100 text-mtn-blue flex items-center justify-center gap-3"
+            >
+              <QrCode className="w-6 h-6" />
+              Enter MomoPay Code
+            </Button>
+
+            <Button
+              onClick={() => setPaymentMethod("generate")}
+              className="w-full h-20 text-lg bg-white hover:bg-gray-100 text-mtn-blue flex items-center justify-center gap-3"
+            >
+              <QrCodeIcon className="w-6 h-6" />
+              Generate Payment QR
+            </Button>
+            <h4 className="text-1xl font-regular text-white text-center mb-8">Developed by Erioluwa</h4>
+          </div>
+        );
     }
   };
 
   return (
-    <div className="min-h-screen bg-mtn-blue p-4">
-      <h1 className="text-2xl font-bold text-white text-center mt-10 mb-8">
-        Rwanda MOMO Pay
-      </h1>
-
-      {selectedMethod === "none" ? (
-        <div className="space-y-4">
-          <button
-            onClick={() => setSelectedMethod("qr")}
-            className="w-full h-20 bg-mtn-yellow rounded-lg flex items-center justify-center gap-3 hover:bg-mtn-yellow/90 transition-colors"
-          >
-            <ScanLine className="w-6 h-6 text-mtn-blue" />
-            <span className="text-lg font-semibold text-mtn-blue">Scan QR Code</span>
-          </button>
-
-          <button
-            onClick={() => setSelectedMethod("number")}
-            className="w-full h-20 bg-white rounded-lg flex items-center justify-center gap-3 hover:bg-gray-100 transition-colors"
-          >
-            <Smartphone className="w-6 h-6 text-mtn-blue" />
-            <span className="text-lg font-medium text-mtn-blue">Enter Number</span>
-          </button>
-
-          <button
-            onClick={() => setSelectedMethod("momopay")}
-            className="w-full h-20 bg-white rounded-lg flex items-center justify-center gap-3 hover:bg-gray-100 transition-colors"
-          >
-            <QrCode className="w-6 h-6 text-mtn-blue" />
-            <span className="text-lg font-medium text-mtn-blue">MomoPay Code</span>
-          </button>
-
-          <button
-            onClick={() => setSelectedMethod("generate")}
-            className="w-full h-20 bg-white rounded-lg flex items-center justify-center gap-3 hover:bg-gray-100 transition-colors"
-          >
-            <QrCodeIcon className="w-6 h-6 text-mtn-blue" />
-            <span className="text-lg font-medium text-mtn-blue">Generate Payment QR</span>
-          </button>
-        </div>
-      ) : (
-        renderContent()
-      )}
+    <div className="min-h-screen bg-gradient-to-b from-mtn-blue to-mtn-blue/90 p-4">
+      <div className="max-w-md mx-auto pt-10">
+        <h1 className="text-3xl font-bold text-white text-center mb-8">
+          Momo QuickPay
+        </h1>
+        
+        {renderContent()}
+      </div>
     </div>
   );
 };
