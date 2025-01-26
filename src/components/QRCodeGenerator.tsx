@@ -50,7 +50,7 @@ const QRCodeGenerator = ({ onBack }: QRCodeGeneratorProps) => {
   const qrData = JSON.stringify({
     type: paymentType,
     code: code,
-    redirectUrl: "https://momo-quickpay.netlify.app/"
+    redirectUrl: "https://qpay.com.ng/"
   });
 
   return (
