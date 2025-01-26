@@ -73,15 +73,13 @@ const HomeScreen = () => {
 
 const App = () => {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<HomeScreen />} />
-        <Route path="/scanner" element={<QRScanner />} />
-        <Route path="/number" element={<NumberInput />} />
-        <Route path="/momopay" element={<MomoPayInput />} />
-        <Route path="/generate" element={<QRCodeGenerator />} />
-      </Routes>
-    </BrowserRouter>
+    <Routes>
+      <Route path="/" element={<HomeScreen />} />
+      <Route path="/scanner" element={<QRScanner />} />
+      <Route path="/number" element={<NumberInput onBack={() => window.history.back()} />} />
+      <Route path="/momopay" element={<MomoPayInput onBack={() => window.history.back()} />} />
+      <Route path="/generate" element={<QRCodeGenerator />} />
+    </Routes>
   );
 };
 

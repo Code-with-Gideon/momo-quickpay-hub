@@ -40,13 +40,19 @@ const QRScanner = () => {
     setIsScanning(true);
     const html5QrcodeScanner = new Html5QrcodeScanner(
       "qr-reader",
-      { fps: 10, qrbox: 250 }
+      { fps: 10, qrbox: { width: 250, height: 250 } },
+      false
     );
     
-    html5QrcodeScanner.render((data) => {
-      handleBarCodeScanned(data);
-      html5QrcodeScanner.clear();
-    }, console.error);
+    html5QrcodeScanner.render(
+      (data) => {
+        handleBarCodeScanned(data);
+        html5QrcodeScanner.clear();
+      },
+      (error) => {
+        console.error(error);
+      }
+    );
   };
 
   return (
