@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Download } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -20,17 +20,13 @@ const QRCodeGenerator = ({ onBack }: QRCodeGeneratorProps) => {
   const [paymentType, setPaymentType] = useState<"account" | "momopay">("account");
   const [code, setCode] = useState("");
   const [showQR, setShowQR] = useState(false);
-  // const [amount, setAmount] = useState("");
+  const qrRef = useRef<SVGSVGElement>(null);
+
   const handleGenerate = () => {
     if (!code) {
       toast.error("Please enter a your Account number or Momopay code");
       return;
     }
-
-  //   if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
-  //   toast.error("Please enter a valid amount");
-  //   return;
-  // }
 
     if (paymentType === "account" && !/^07\d{8}$/.test(code)) {
       toast.error("Please enter a valid Rwanda phone number");
@@ -43,7 +39,32 @@ const QRCodeGenerator = ({ onBack }: QRCodeGeneratorProps) => {
     }
 
     setShowQR(true);
+  };
 
+  const handleDownload = () => {
+    if (!qrRef.current) return;
+
+    const svg = qrRef.current;
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    const img = new Image();
+
+    img.onload = () => {
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx?.drawImage(img, 0, 0);
+      const pngFile = canvas.toDataURL("image/png");
+      
+      const downloadLink = document.createElement("a");
+      downloadLink.download = `payment-qr-${paymentType}-${code}.png`;
+      downloadLink.href = pngFile;
+      downloadLink.click();
+      
+      toast.success("QR Code downloaded successfully!");
+    };
+
+    img.src = "data:image/svg+xml;base64," + btoa(svgData);
   };
 
   // Create a URL-friendly JSON string for the QR code that includes the web app URL
@@ -105,20 +126,7 @@ const QRCodeGenerator = ({ onBack }: QRCodeGeneratorProps) => {
             }}
           />
         </div>
-        {/* <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Amount
-          </label>
-          <Input
-            type="text"
-            placeholder="Enter amount"
-            value={amount}
-            onChange={(e) => {
-              setAmount(e.target.value);
-              setShowQR(false);
-            }}
-          />
-        </div> */}
+
         {!showQR && (
           <Button
             onClick={handleGenerate}
@@ -131,8 +139,15 @@ const QRCodeGenerator = ({ onBack }: QRCodeGeneratorProps) => {
         {showQR && (
           <div className="flex flex-col items-center space-y-4">
             <div className="bg-white p-4 rounded-lg shadow">
-              <QRCodeSVG value={qrData} size={200} />
+              <QRCodeSVG ref={qrRef} value={qrData} size={200} />
             </div>
+            <Button
+              onClick={handleDownload}
+              className="w-full bg-mtn-yellow hover:bg-mtn-yellow/90 text-mtn-blue"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Download QR Code
+            </Button>
             <p className="text-sm text-gray-500 text-center">
               Scan this code with any QR scanner to make a payment
             </p>
