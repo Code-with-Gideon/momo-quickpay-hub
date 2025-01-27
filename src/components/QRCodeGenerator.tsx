@@ -48,23 +48,67 @@ const QRCodeGenerator = ({ onBack }: QRCodeGeneratorProps) => {
     const svgData = new XMLSerializer().serializeToString(svg);
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
-    const img = new Image();
-
-    img.onload = () => {
-      canvas.width = img.width;
-      canvas.height = img.height;
-      ctx?.drawImage(img, 0, 0);
-      const pngFile = canvas.toDataURL("image/png");
+    
+    // Create a larger canvas for the decorated QR code
+    canvas.width = 400;
+    canvas.height = 500;
+    
+    if (ctx) {
+      // Fill white background
+      ctx.fillStyle = "white";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
       
-      const downloadLink = document.createElement("a");
-      downloadLink.download = `payment-qr-${paymentType}-${code}.png`;
-      downloadLink.href = pngFile;
-      downloadLink.click();
+      // Draw decorative elements
+      ctx.strokeStyle = "#f0f0f0";
+      ctx.lineWidth = 2;
       
-      toast.success("QR Code downloaded successfully!");
-    };
-
-    img.src = "data:image/svg+xml;base64," + btoa(svgData);
+      // Draw dollar signs in corners
+      ctx.font = "24px Arial";
+      ctx.fillStyle = "#e0e0e0";
+      ctx.fillText("$", 30, 30);
+      ctx.fillText("$", canvas.width - 40, 30);
+      ctx.fillText("$", 30, canvas.height - 20);
+      ctx.fillText("$", canvas.width - 40, canvas.height - 20);
+      
+      // Draw curved lines
+      ctx.beginPath();
+      ctx.moveTo(20, 50);
+      ctx.quadraticCurveTo(50, 100, 20, 150);
+      ctx.stroke();
+      
+      ctx.beginPath();
+      ctx.moveTo(canvas.width - 20, 50);
+      ctx.quadraticCurveTo(canvas.width - 50, 100, canvas.width - 20, 150);
+      ctx.stroke();
+      
+      // Load and draw QR code
+      const img = new Image();
+      img.onload = () => {
+        // Center the QR code
+        const qrSize = 250;
+        const x = (canvas.width - qrSize) / 2;
+        const y = (canvas.height - qrSize - 60) / 2;
+        
+        ctx.drawImage(img, x, y, qrSize, qrSize);
+        
+        // Add website URL at bottom
+        ctx.font = "bold 20px Arial";
+        ctx.fillStyle = "#004F9F";
+        ctx.textAlign = "center";
+        ctx.fillText("qpay.com.ng", canvas.width / 2, canvas.height - 40);
+        
+        // Create download link
+        const pngFile = canvas.toDataURL("image/png");
+        const downloadLink = document.createElement("a");
+        downloadLink.download = `payment-qr-${paymentType}-${code}.png`;
+        downloadLink.href = pngFile;
+        downloadLink.click();
+        
+        toast.success("QR Code downloaded successfully!");
+      };
+      
+      img.src = "data:image/svg+xml;base64," + btoa(svgData);
+    }
   };
 
   // Create a URL-friendly JSON string for the QR code that includes the web app URL
