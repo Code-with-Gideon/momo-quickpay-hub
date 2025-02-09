@@ -28,9 +28,9 @@ const Index = () => {
               alt="Banner Background"
               className="w-full h-full object-cover"
             />
-            <div className="absolute inset-0 bg-[#070058]/70 flex flex-col justify-center items-center">
-              <h1 className="text-2xl font-bold text-white mb-2">Welcome to<br />Momo Quickpay (DEMO)</h1>
-              <p className="text-white/80 text-sm">A simple interface to navigate through MOMO</p>
+            <div className="absolute inset-0 bg-[#070058]/70 flex flex-col justify-center items-center text-center">
+              <h1 className="text-[19px] font-bold text-white mb-2">Welcome to<br />Momo Quickpay (DEMO)</h1>
+              <p className="text-[13px] text-white/80">A simple interface to navigate through MOMO</p>
             </div>
           </div>
 
