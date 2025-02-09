@@ -1,5 +1,6 @@
+
 import { useState } from "react";
-import { Send, Smartphone, QrCode, Signal } from "lucide-react";
+import { Send, Smartphone, QrCode, Signal, Scan, PhoneCall } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import NumberInput from "@/components/NumberInput";
 import QRScanner from "@/components/QRScanner";
@@ -97,7 +98,7 @@ const Index = () => {
             onClick={() => setCurrentScreen("qr")}
             className="w-full h-20 text-lg font-semibold bg-mtn-yellow hover:bg-mtn-yellow/90 text-mtn-blue flex items-center justify-center gap-4 rounded-xl shadow-lg transition-all duration-300 hover:scale-[1.02]"
           >
-            <ScanIcon className="w-7 h-7" />
+            <Scan className="w-7 h-7" />
             Scan Payment QR Code
           </Button>
           
@@ -135,7 +136,7 @@ const Index = () => {
             onClick={() => setCurrentScreen("generate")}
             className="w-full h-20 text-lg font-semibold bg-mtn-yellow hover:bg-mtn-yellow/90 text-mtn-blue flex items-center justify-center gap-4 rounded-xl shadow-lg transition-all duration-300 hover:scale-[1.02]"
           >
-            <QrCodeIcon className="w-7 h-7" />
+            <QrCode className="w-7 h-7" />
             Generate Payment QR
           </Button>
 
