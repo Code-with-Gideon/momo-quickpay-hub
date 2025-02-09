@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ScanIcon, Smartphone, QrCode, QrCodeIcon, ArrowUpFromLine, ArrowDownToLine, PhoneCall, Send, Signal } from "lucide-react";
+import { Send, Smartphone, QrCode, Signal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import NumberInput from "@/components/NumberInput";
 import QRScanner from "@/components/QRScanner";
@@ -22,13 +22,17 @@ const Index = () => {
       return (
         <div className="space-y-6">
           {/* Banner */}
-          <div className="bg-[#070058] rounded-2xl p-6 text-center relative overflow-hidden">
+          <div className="bg-[#070058] rounded-[20px] p-6 text-center relative overflow-hidden">
             <div className="absolute inset-0">
               <img 
-                src="/lovable-uploads/734bfea9-bb0b-4eea-96b1-43607ba8d7de.png" 
+                src="/lovable-uploads/b7967ec0-99ae-4da3-9e3f-7f09f996b7ee.png" 
                 alt="Banner Background"
                 className="w-full h-full object-cover"
               />
+            </div>
+            <div className="relative z-10">
+              <h1 className="text-2xl font-bold text-white mb-2">Welcome to<br />Momo Quickpay (DEMO)</h1>
+              <p className="text-white/80 text-sm">A simple interface to navigate through MOMO</p>
             </div>
           </div>
 
@@ -36,31 +40,31 @@ const Index = () => {
           <div className="grid grid-cols-2 gap-4">
             <Button
               onClick={() => setMode("send")}
-              className="h-24 bg-[#221F26] hover:bg-[#221F26]/90 text-white flex flex-col items-center justify-center gap-2 rounded-xl"
+              className="h-[72px] bg-[#070058] hover:bg-[#070058]/90 text-white flex items-center justify-center gap-3 rounded-xl"
             >
-              <Send className="w-6 h-6" />
+              <Send className="w-5 h-5" />
               <span>Send Money</span>
             </Button>
             <Button
               onClick={() => setCurrentScreen("generate")}
               variant="outline"
-              className="h-24 border-2 hover:bg-gray-50 text-[#221F26] flex flex-col items-center justify-center gap-2 rounded-xl"
+              className="h-[72px] border-2 hover:bg-gray-50 text-[#070058] flex items-center justify-center gap-3 rounded-xl"
             >
-              <QrCode className="w-6 h-6" />
+              <QrCode className="w-5 h-5" />
               <span>Generate QR Code</span>
             </Button>
             <Button
               variant="outline"
-              className="h-24 border-2 hover:bg-gray-50 text-[#221F26] flex flex-col items-center justify-center gap-2 rounded-xl"
+              className="h-[72px] border-2 hover:bg-gray-50 text-[#070058] flex items-center justify-center gap-3 rounded-xl"
             >
-              <Smartphone className="w-6 h-6" />
+              <Smartphone className="w-5 h-5" />
               <span>Buy Airtime</span>
             </Button>
             <Button
               variant="outline"
-              className="h-24 border-2 hover:bg-gray-50 text-[#221F26] flex flex-col items-center justify-center gap-2 rounded-xl"
+              className="h-[72px] border-2 hover:bg-gray-50 text-[#070058] flex items-center justify-center gap-3 rounded-xl"
             >
-              <Signal className="w-6 h-6" />
+              <Signal className="w-5 h-5" />
               <span>Buy Data</span>
             </Button>
           </div>
@@ -70,7 +74,7 @@ const Index = () => {
 
           {/* Feedback Link */}
           <div className="text-center mt-8">
-            <a href="#" className="text-[#221F26] text-sm hover:underline">
+            <a href="#" className="text-[#070058] text-sm hover:underline">
               Have a Feedback?
             </a>
           </div>

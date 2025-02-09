@@ -35,7 +35,7 @@ const getTitle = (type: Transaction["type"]) => {
 const RecentTransactions = () => {
   return (
     <div className="bg-white rounded-2xl p-6 shadow-sm">
-      <h2 className="text-xl font-bold text-[#221F26] mb-4">Recent Transactions</h2>
+      <h2 className="text-xl font-bold text-[#070058] mb-4">Recent Transactions</h2>
       {mockTransactions.length === 0 ? (
         <div className="text-center py-8 text-gray-500">
           No recent transactions
@@ -59,16 +59,16 @@ const RecentTransactions = () => {
               <div className="space-y-4">
                 {transactions.map((transaction, idx) => (
                   <div key={idx} className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-[#221F26] flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-full bg-[#070058] flex items-center justify-center">
                       {getIcon(transaction.type)}
                     </div>
                     <div className="flex-1">
-                      <p className="font-semibold text-[#221F26]">
+                      <p className="font-semibold text-[#070058]">
                         {getTitle(transaction.type)}
                       </p>
                       <p className="text-sm text-gray-500">To {transaction.to}</p>
                     </div>
-                    <p className="font-semibold text-[#221F26]">{transaction.amount}</p>
+                    <p className="font-semibold text-[#070058]">{transaction.amount}</p>
                   </div>
                 ))}
               </div>
