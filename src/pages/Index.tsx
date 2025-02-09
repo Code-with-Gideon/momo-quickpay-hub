@@ -22,31 +22,14 @@ const Index = () => {
       return (
         <div className="space-y-6">
           {/* Banner */}
-          <div className="bg-[#221F26] rounded-2xl p-6 text-center relative overflow-hidden">
-            <div className="absolute inset-0 opacity-20">
-              <svg className="w-full h-full" viewBox="0 0 400 200">
-                <path
-                  d="M0,100 C150,200 250,0 400,100"
-                  stroke="white"
-                  strokeWidth="2"
-                  fill="none"
-                  className="animate-[wave_3s_ease-in-out_infinite]"
-                />
-                <path
-                  d="M0,100 C150,0 250,200 400,100"
-                  stroke="white"
-                  strokeWidth="2"
-                  fill="none"
-                  className="animate-[wave_3s_ease-in-out_infinite_0.5s]"
-                />
-              </svg>
+          <div className="bg-[#070058] rounded-2xl p-6 text-center relative overflow-hidden">
+            <div className="absolute inset-0">
+              <img 
+                src="/lovable-uploads/734bfea9-bb0b-4eea-96b1-43607ba8d7de.png" 
+                alt="Banner Background"
+                className="w-full h-full object-cover"
+              />
             </div>
-            <h1 className="text-2xl font-bold text-white mb-2">
-              Welcome to<br />Momo Quickpay (DEMO)
-            </h1>
-            <p className="text-gray-300 text-sm">
-              A simple interface to navigate through MOMO
-            </p>
           </div>
 
           {/* Action Buttons */}
