@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Send, Smartphone, QrCode, Signal, Scan, PhoneCall } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -23,15 +22,13 @@ const Index = () => {
       return (
         <div className="space-y-6">
           {/* Banner */}
-          <div className="bg-[#070058] rounded-[20px] p-6 text-center relative overflow-hidden">
-            <div className="absolute inset-0">
-              <img 
-                src="/lovable-uploads/b7967ec0-99ae-4da3-9e3f-7f09f996b7ee.png" 
-                alt="Banner Background"
-                className="w-full h-full object-cover"
-              />
-            </div>
-            <div className="relative z-10">
+          <div className="rounded-[20px] overflow-hidden h-[180px] relative">
+            <img 
+              src="/lovable-uploads/0af956c5-c425-481b-a902-d2974b9a9e0b.png" 
+              alt="Banner Background"
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-[#070058]/70 flex flex-col justify-center items-center">
               <h1 className="text-2xl font-bold text-white mb-2">Welcome to<br />Momo Quickpay (DEMO)</h1>
               <p className="text-white/80 text-sm">A simple interface to navigate through MOMO</p>
             </div>
