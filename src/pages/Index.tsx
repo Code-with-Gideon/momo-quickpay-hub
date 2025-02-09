@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { ScanIcon, Smartphone, QrCode, QrCodeIcon, ArrowUpFromLine, ArrowDownToLine, PhoneCall } from "lucide-react";
+import { ScanIcon, Smartphone, QrCode, QrCodeIcon, ArrowUpFromLine, ArrowDownToLine, PhoneCall, Send, Signal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import NumberInput from "@/components/NumberInput";
 import QRScanner from "@/components/QRScanner";
 import MomoPayInput from "@/components/MomoPayInput";
 import QRCodeGenerator from "@/components/QRCodeGenerator";
+import RecentTransactions from "@/components/RecentTransactions";
 
 type Screen = "home" | "qr" | "number" | "momopay" | "generate";
 
@@ -17,24 +18,79 @@ const Index = () => {
   };
 
   const renderContent = () => {
-    if (mode === null) {
+    if (currentScreen === "home" && !mode) {
       return (
         <div className="space-y-6">
-          <Button
-            onClick={() => setMode("send")}
-            className="w-full h-24 text-xl font-semibold bg-mtn-yellow hover:bg-mtn-yellow/90 text-mtn-blue flex items-center justify-center gap-4 rounded-xl shadow-lg transition-all duration-300 hover:scale-[1.02]"
-          >
-            <ArrowUpFromLine className="w-8 h-8" />
-            Send Money
-          </Button>
-          
-          <Button
-            onClick={() => setMode("receive")}
-            className="w-full h-24 text-xl font-semibold bg-white hover:bg-gray-50 text-mtn-blue flex items-center justify-center gap-4 rounded-xl shadow-lg transition-all duration-300 hover:scale-[1.02] border-2 border-mtn-yellow"
-          >
-            <ArrowDownToLine className="w-8 h-8" />
-            Receive Money
-          </Button>
+          {/* Banner */}
+          <div className="bg-[#221F26] rounded-2xl p-6 text-center relative overflow-hidden">
+            <div className="absolute inset-0 opacity-20">
+              <svg className="w-full h-full" viewBox="0 0 400 200">
+                <path
+                  d="M0,100 C150,200 250,0 400,100"
+                  stroke="white"
+                  strokeWidth="2"
+                  fill="none"
+                  className="animate-[wave_3s_ease-in-out_infinite]"
+                />
+                <path
+                  d="M0,100 C150,0 250,200 400,100"
+                  stroke="white"
+                  strokeWidth="2"
+                  fill="none"
+                  className="animate-[wave_3s_ease-in-out_infinite_0.5s]"
+                />
+              </svg>
+            </div>
+            <h1 className="text-2xl font-bold text-white mb-2">
+              Welcome to<br />Momo Quickpay (DEMO)
+            </h1>
+            <p className="text-gray-300 text-sm">
+              A simple interface to navigate through MOMO
+            </p>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="grid grid-cols-2 gap-4">
+            <Button
+              onClick={() => setMode("send")}
+              className="h-24 bg-[#221F26] hover:bg-[#221F26]/90 text-white flex flex-col items-center justify-center gap-2 rounded-xl"
+            >
+              <Send className="w-6 h-6" />
+              <span>Send Money</span>
+            </Button>
+            <Button
+              onClick={() => setCurrentScreen("generate")}
+              variant="outline"
+              className="h-24 border-2 hover:bg-gray-50 text-[#221F26] flex flex-col items-center justify-center gap-2 rounded-xl"
+            >
+              <QrCode className="w-6 h-6" />
+              <span>Generate QR Code</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="h-24 border-2 hover:bg-gray-50 text-[#221F26] flex flex-col items-center justify-center gap-2 rounded-xl"
+            >
+              <Smartphone className="w-6 h-6" />
+              <span>Buy Airtime</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="h-24 border-2 hover:bg-gray-50 text-[#221F26] flex flex-col items-center justify-center gap-2 rounded-xl"
+            >
+              <Signal className="w-6 h-6" />
+              <span>Buy Data</span>
+            </Button>
+          </div>
+
+          {/* Recent Transactions */}
+          <RecentTransactions />
+
+          {/* Feedback Link */}
+          <div className="text-center mt-8">
+            <a href="#" className="text-[#221F26] text-sm hover:underline">
+              Have a Feedback?
+            </a>
+          </div>
         </div>
       );
     }
@@ -122,11 +178,8 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-mtn-blue to-mtn-blue/90 p-6">
-      <div className="max-w-md mx-auto pt-8">
-        <h1 className="text-4xl font-bold text-white text-center mb-12">
-          Momo QuickPay
-        </h1>
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-lg mx-auto px-4 py-6">
         {renderContent()}
       </div>
     </div>
