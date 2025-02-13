@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Send, Smartphone, QrCode, Signal, Scan, PhoneCall } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -6,8 +7,9 @@ import QRScanner from "@/components/QRScanner";
 import MomoPayInput from "@/components/MomoPayInput";
 import QRCodeGenerator from "@/components/QRCodeGenerator";
 import RecentTransactions from "@/components/RecentTransactions";
+import SendMoneyView from "@/components/SendMoneyView";
 
-type Screen = "home" | "qr" | "number" | "momopay" | "generate";
+type Screen = "home" | "qr" | "number" | "momopay" | "generate" | "send";
 
 const Index = () => {
   const [currentScreen, setCurrentScreen] = useState<Screen>("home");
@@ -18,6 +20,10 @@ const Index = () => {
   };
 
   const renderContent = () => {
+    if (currentScreen === "send") {
+      return <SendMoneyView onBack={() => setCurrentScreen("home")} />;
+    }
+
     if (currentScreen === "home" && !mode) {
       return (
         <div className="space-y-6">
@@ -37,7 +43,7 @@ const Index = () => {
           {/* Action Buttons */}
           <div className="grid grid-cols-2 gap-4">
             <Button
-              onClick={() => setMode("send")}
+              onClick={() => setCurrentScreen("send")}
               className="h-[72px] bg-[#070058] hover:bg-[#070058]/90 text-white flex items-center justify-center gap-3 rounded-xl"
             >
               <Send className="w-5 h-5" />
@@ -80,74 +86,6 @@ const Index = () => {
       );
     }
 
-    if (mode === "send" && currentScreen === "home") {
-      return (
-        <div className="space-y-4">
-          <Button
-            variant="ghost"
-            onClick={() => setMode(null)}
-            className="mb-6 text-white hover:text-white/80 font-semibold"
-          >
-            ← Back
-          </Button>
-
-          <Button
-            onClick={() => setCurrentScreen("qr")}
-            className="w-full h-20 text-lg font-semibold bg-mtn-yellow hover:bg-mtn-yellow/90 text-mtn-blue flex items-center justify-center gap-4 rounded-xl shadow-lg transition-all duration-300 hover:scale-[1.02]"
-          >
-            <Scan className="w-7 h-7" />
-            Scan Payment QR Code
-          </Button>
-          
-          <Button
-            onClick={() => setCurrentScreen("number")}
-            className="w-full h-20 text-lg font-semibold bg-white hover:bg-gray-50 text-mtn-blue flex items-center justify-center gap-4 rounded-xl shadow-lg transition-all duration-300 hover:scale-[1.02] border-2 border-mtn-yellow"
-          >
-            <Smartphone className="w-7 h-7" />
-            Enter Account Number
-          </Button>
-
-          <Button
-            onClick={() => setCurrentScreen("momopay")}
-            className="w-full h-20 text-lg font-semibold bg-white hover:bg-gray-50 text-mtn-blue flex items-center justify-center gap-4 rounded-xl shadow-lg transition-all duration-300 hover:scale-[1.02] border-2 border-mtn-yellow"
-          >
-            <QrCode className="w-7 h-7" />
-            Enter MomoPay Code
-          </Button>
-        </div>
-      );
-    }
-
-    if (mode === "receive" && currentScreen === "home") {
-      return (
-        <div className="space-y-4">
-          <Button
-            variant="ghost"
-            onClick={() => setMode(null)}
-            className="mb-6 text-white hover:text-white/80 font-semibold"
-          >
-            ← Back
-          </Button>
-
-          <Button
-            onClick={() => setCurrentScreen("generate")}
-            className="w-full h-20 text-lg font-semibold bg-mtn-yellow hover:bg-mtn-yellow/90 text-mtn-blue flex items-center justify-center gap-4 rounded-xl shadow-lg transition-all duration-300 hover:scale-[1.02]"
-          >
-            <QrCode className="w-7 h-7" />
-            Generate Payment QR
-          </Button>
-
-          <Button
-            onClick={handleCheckAccountNumber}
-            className="w-full h-20 text-lg font-semibold bg-white hover:bg-gray-50 text-mtn-blue flex items-center justify-center gap-4 rounded-xl shadow-lg transition-all duration-300 hover:scale-[1.02] border-2 border-mtn-yellow"
-          >
-            <PhoneCall className="w-7 h-7" />
-            Check Account Number
-          </Button>
-        </div>
-      );
-    }
-
     switch (currentScreen) {
       case "qr":
         return <QRScanner onBack={() => setCurrentScreen("home")} />;
@@ -164,7 +102,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-lg mx-auto px-4 py-6">
+      <div className="max-w-lg mx-auto">
         {renderContent()}
       </div>
     </div>
