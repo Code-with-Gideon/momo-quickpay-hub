@@ -14,10 +14,6 @@ const Index = () => {
   const [currentScreen, setCurrentScreen] = useState<Screen>("home");
   const [mode, setMode] = useState<"send" | "receive" | null>(null);
 
-  const handleCheckAccountNumber = () => {
-    window.location.href = "tel:*135*8%23";
-  };
-
   const renderContent = () => {
     if (currentScreen === "send") {
       return <SendMoneyView onBack={() => setCurrentScreen("home")} />;
@@ -25,17 +21,17 @@ const Index = () => {
 
     if (currentScreen === "home" && !mode) {
       return (
-        <div className="space-y-6 px-4">
+        <div className="space-y-6 px-4 py-6">
           {/* Banner */}
-          <div className="rounded-[20px] overflow-hidden h-[180px] relative">
+          <div className="rounded-[20px] overflow-hidden h-[180px] relative shadow-lg">
             <img 
               src="/lovable-uploads/0af956c5-c425-481b-a902-d2974b9a9e0b.png" 
               alt="Banner Background"
               className="w-full h-full object-cover"
             />
-            <div className="absolute inset-0 bg-[#070058]/70 flex flex-col justify-center items-center text-center">
-              <h1 className="text-[19px] font-bold text-white mb-2">Welcome to<br />Momo Quickpay (DEMO)</h1>
-              <p className="text-[13px] text-white/80">A simple interface to navigate through MOMO</p>
+            <div className="absolute inset-0 bg-[#070058]/70 flex flex-col justify-center items-center text-center px-6">
+              <h1 className="text-[19px] font-bold text-white mb-3">Welcome to<br />Momo Quickpay (DEMO)</h1>
+              <p className="text-[13px] text-white/90 max-w-[240px]">A simple interface to navigate through MOMO</p>
             </div>
           </div>
 
@@ -43,32 +39,32 @@ const Index = () => {
           <div className="grid grid-cols-2 gap-4">
             <Button
               onClick={() => setCurrentScreen("send")}
-              className="h-[72px] bg-[#070058] hover:bg-[#070058]/90 text-white flex items-center justify-center gap-3 rounded-xl"
+              className="h-[72px] bg-[#070058] hover:bg-[#070058]/90 text-white flex flex-col items-center justify-center gap-2 rounded-xl shadow-md transition-all duration-200 hover:scale-[1.02]"
             >
-              <Send className="w-5 h-5" />
-              <span>Send Money</span>
+              <Send className="w-6 h-6" />
+              <span className="text-sm font-medium">Send Money</span>
             </Button>
             <Button
               onClick={() => setCurrentScreen("generate")}
               variant="outline"
-              className="h-[72px] border-2 hover:bg-gray-50 text-[#070058] flex items-center justify-center gap-3 rounded-xl"
+              className="h-[72px] border-2 hover:bg-gray-50 text-[#070058] flex flex-col items-center justify-center gap-2 rounded-xl shadow-sm transition-all duration-200 hover:scale-[1.02]"
             >
-              <QrCode className="w-5 h-5" />
-              <span>Generate QR Code</span>
+              <QrCode className="w-6 h-6" />
+              <span className="text-sm font-medium">Generate QR Code</span>
             </Button>
             <Button
               variant="outline"
-              className="h-[72px] border-2 hover:bg-gray-50 text-[#070058] flex items-center justify-center gap-3 rounded-xl"
+              className="h-[72px] border-2 hover:bg-gray-50 text-[#070058] flex flex-col items-center justify-center gap-2 rounded-xl shadow-sm transition-all duration-200 hover:scale-[1.02]"
             >
-              <Smartphone className="w-5 h-5" />
-              <span>Buy Airtime</span>
+              <Smartphone className="w-6 h-6" />
+              <span className="text-sm font-medium">Buy Airtime</span>
             </Button>
             <Button
               variant="outline"
-              className="h-[72px] border-2 hover:bg-gray-50 text-[#070058] flex items-center justify-center gap-3 rounded-xl"
+              className="h-[72px] border-2 hover:bg-gray-50 text-[#070058] flex flex-col items-center justify-center gap-2 rounded-xl shadow-sm transition-all duration-200 hover:scale-[1.02]"
             >
-              <Signal className="w-5 h-5" />
-              <span>Buy Data</span>
+              <Signal className="w-6 h-6" />
+              <span className="text-sm font-medium">Buy Data</span>
             </Button>
           </div>
 
@@ -76,8 +72,8 @@ const Index = () => {
           <RecentTransactions />
 
           {/* Feedback Link */}
-          <div className="text-center mt-8">
-            <a href="#" className="text-[#070058] text-sm hover:underline">
+          <div className="text-center mt-8 mb-4">
+            <a href="#" className="text-[#070058] text-sm font-medium hover:underline transition-colors">
               Have a Feedback?
             </a>
           </div>
