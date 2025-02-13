@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Send, Smartphone, QrCode, Signal, Scan, PhoneCall } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -26,7 +25,7 @@ const Index = () => {
 
     if (currentScreen === "home" && !mode) {
       return (
-        <div className="space-y-6">
+        <div className="space-y-6 px-4">
           {/* Banner */}
           <div className="rounded-[20px] overflow-hidden h-[180px] relative">
             <img 
