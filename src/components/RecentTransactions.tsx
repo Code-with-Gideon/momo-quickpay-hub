@@ -8,7 +8,20 @@ interface Transaction {
   date: "Today" | "Yesterday";
 }
 
-const mockTransactions: Transaction[] = [];
+const mockTransactions: Transaction[] = [
+  {
+    type: "send",
+    to: "0789123456",
+    amount: "RWF 5,000",
+    date: "Today"
+  },
+  {
+    type: "send",
+    to: "0788987654",
+    amount: "RWF 1,000",
+    date: "Yesterday"
+  }
+];
 
 const getIcon = (type: Transaction["type"]) => {
   switch (type) {

@@ -9,6 +9,17 @@ interface SendMoneyViewProps {
   onBack: () => void;
 }
 
+interface RecentTransaction {
+  phoneNumber: string;
+  amount: string;
+  date: string;
+}
+
+const recentTransactions: RecentTransaction[] = [
+  { phoneNumber: "0789123456", amount: "RWF 5,000", date: "Today" },
+  { phoneNumber: "0788987654", amount: "RWF 1,000", date: "Yesterday" },
+];
+
 const SendMoneyView = ({ onBack }: SendMoneyViewProps) => {
   const [accountNumber, setAccountNumber] = useState("");
   const [step, setStep] = useState<"number" | "amount">("number");
@@ -17,6 +28,10 @@ const SendMoneyView = ({ onBack }: SendMoneyViewProps) => {
 
   const handleQuickAmount = (value: string) => {
     setAmount(value);
+  };
+
+  const handleSelectRecent = (phoneNumber: string) => {
+    setAccountNumber(phoneNumber);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -54,32 +69,35 @@ const SendMoneyView = ({ onBack }: SendMoneyViewProps) => {
   const renderStep = () => {
     if (step === "amount") {
       return (
-        <div className="space-y-6 p-6 bg-white rounded-2xl shadow-md">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-[#070058] rounded-full flex items-center justify-center shadow-md">
-              <User2 className="w-6 h-6 text-white" />
+        <div className="space-y-8 p-8 bg-white rounded-2xl shadow-sm">
+          <div className="flex items-center gap-5">
+            <div className="w-14 h-14 bg-[#070058] rounded-full flex items-center justify-center shadow-md">
+              <User2 className="w-7 h-7 text-white" />
             </div>
-            <span className="text-[#070058] font-medium text-lg">{accountNumber}</span>
+            <div className="flex-1">
+              <span className="text-[#070058] text-lg font-medium block">{accountNumber}</span>
+              <span className="text-gray-500 text-sm">MTN Mobile Money</span>
+            </div>
           </div>
 
-          <div className="space-y-5">
-            <div>
-              <label className="text-[#070058] font-medium block mb-2.5">Amount</label>
+          <div className="space-y-6">
+            <div className="space-y-3">
+              <label className="text-[#070058] font-medium block">Amount</label>
               <Input
                 type="number"
                 placeholder="Enter Amount"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                className="h-12 bg-gray-50 rounded-xl text-lg placeholder:text-gray-400"
+                className="h-14 bg-gray-50 rounded-xl text-lg placeholder:text-gray-400 border-0 focus-visible:ring-1"
               />
             </div>
 
-            <div className="flex gap-3">
+            <div className="grid grid-cols-3 gap-3">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => handleQuickAmount("500")}
-                className="flex-1 h-12 bg-gray-50 border-0 hover:bg-gray-100 font-medium rounded-xl transition-colors"
+                className="h-14 bg-gray-50 hover:bg-gray-100 border-0 font-medium rounded-xl transition-colors"
               >
                 RWF 500
               </Button>
@@ -87,36 +105,36 @@ const SendMoneyView = ({ onBack }: SendMoneyViewProps) => {
                 type="button"
                 variant="outline"
                 onClick={() => handleQuickAmount("1000")}
-                className="flex-1 h-12 bg-gray-50 border-0 hover:bg-gray-100 font-medium rounded-xl transition-colors"
+                className="h-14 bg-gray-50 hover:bg-gray-100 border-0 font-medium rounded-xl transition-colors"
               >
-                RWF 1000
+                RWF 1,000
               </Button>
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => handleQuickAmount("5000")}
-                className="flex-1 h-12 bg-gray-50 border-0 hover:bg-gray-100 font-medium rounded-xl transition-colors"
+                className="h-14 bg-gray-50 hover:bg-gray-100 border-0 font-medium rounded-xl transition-colors"
               >
-                RWF 5000
+                RWF 5,000
               </Button>
             </div>
 
-            <div>
-              <label className="text-[#070058] font-medium block mb-2.5">
+            <div className="space-y-3">
+              <label className="text-[#070058] font-medium block">
                 Comment <span className="text-gray-400 font-normal">(Optional)</span>
               </label>
               <Input
-                placeholder="eg Store Payment"
+                placeholder="eg: Store Payment"
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
-                className="h-12 bg-gray-50 rounded-xl placeholder:text-gray-400"
+                className="h-14 bg-gray-50 rounded-xl border-0 placeholder:text-gray-400 focus-visible:ring-1"
               />
             </div>
           </div>
 
           <Button
             type="submit"
-            className="w-full h-12 bg-[#070058] hover:bg-[#070058]/90 text-white font-medium rounded-xl flex items-center justify-center gap-2.5 shadow-md transition-all duration-200 hover:scale-[1.02]"
+            className="w-full h-14 bg-[#070058] hover:bg-[#070058]/90 text-white font-medium rounded-xl flex items-center justify-center gap-3 shadow-md transition-all duration-200 hover:scale-[1.02]"
           >
             <Send className="w-5 h-5" />
             Send Money
@@ -126,29 +144,61 @@ const SendMoneyView = ({ onBack }: SendMoneyViewProps) => {
     }
 
     return (
-      <div className="p-6 bg-white rounded-2xl shadow-md">
-        <h2 className="text-[#070058] text-xl font-semibold mb-6">Enter Account Number or Code</h2>
-        <div className="relative">
-          <Input
-            type="tel"
-            placeholder="07xxxxxxxxx"
-            value={accountNumber}
-            onChange={(e) => setAccountNumber(e.target.value)}
-            className="h-12 bg-gray-50 rounded-xl pr-12 text-lg placeholder:text-gray-400"
-          />
-          <button 
-            className="absolute right-3 top-1/2 -translate-y-1/2 hover:scale-110 transition-transform"
-            onClick={() => {/* QR code scanner functionality */}}
+      <div className="space-y-6">
+        <div className="p-8 bg-white rounded-2xl shadow-sm">
+          <h2 className="text-[#070058] text-xl font-semibold mb-6">Enter Account Number or Code</h2>
+          <div className="relative">
+            <Input
+              type="tel"
+              placeholder="07xxxxxxxxx"
+              value={accountNumber}
+              onChange={(e) => setAccountNumber(e.target.value)}
+              className="h-14 bg-gray-50 rounded-xl pr-12 text-lg placeholder:text-gray-400 border-0 focus-visible:ring-1"
+            />
+            <button 
+              className="absolute right-3 top-1/2 -translate-y-1/2 hover:scale-110 transition-transform"
+              onClick={() => {/* QR code scanner functionality */}}
+            >
+              <QrCode className="w-6 h-6 text-[#070058]" />
+            </button>
+          </div>
+          <Button
+            type="submit"
+            className="w-full h-14 mt-6 bg-[#070058] hover:bg-[#070058]/90 text-white font-medium rounded-xl shadow-md transition-all duration-200 hover:scale-[1.02]"
           >
-            <QrCode className="w-6 h-6 text-[#070058]" />
-          </button>
+            Continue
+          </Button>
         </div>
-        <Button
-          type="submit"
-          className="w-full h-12 mt-6 bg-[#070058] hover:bg-[#070058]/90 text-white font-medium rounded-xl shadow-md transition-all duration-200 hover:scale-[1.02]"
-        >
-          Continue
-        </Button>
+
+        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+          <div className="flex border-b">
+            <button className="flex-1 py-4 text-[#070058] font-semibold border-b-2 border-[#070058]">
+              Recents
+            </button>
+            <button className="flex-1 py-4 text-gray-500 hover:text-gray-700 transition-colors">
+              Favorite
+            </button>
+          </div>
+
+          <div className="divide-y">
+            {recentTransactions.map((transaction, idx) => (
+              <button
+                key={idx}
+                onClick={() => handleSelectRecent(transaction.phoneNumber)}
+                className="w-full p-4 flex items-center gap-4 hover:bg-gray-50 transition-colors"
+              >
+                <div className="w-12 h-12 rounded-full bg-[#070058] flex items-center justify-center">
+                  <Send className="w-5 h-5 text-white" />
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="font-medium text-[#070058]">{transaction.phoneNumber}</p>
+                  <p className="text-sm text-gray-500">{transaction.date}</p>
+                </div>
+                <p className="font-medium text-[#070058]">{transaction.amount}</p>
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
     );
   };
@@ -175,29 +225,10 @@ const SendMoneyView = ({ onBack }: SendMoneyViewProps) => {
       </div>
 
       {/* Content */}
-      <div className="px-4 -mt-6">
+      <div className="px-4 py-6 -mt-6">
         <form onSubmit={handleSubmit}>
           {renderStep()}
         </form>
-
-        {step === "number" && (
-          <div className="mt-6 bg-white rounded-2xl overflow-hidden shadow-md">
-            <div className="flex border-b">
-              <button className="flex-1 py-4 text-[#070058] font-semibold border-b-2 border-[#070058]">
-                Recents
-              </button>
-              <button className="flex-1 py-4 text-gray-500 hover:text-gray-700 transition-colors">
-                Favorite
-              </button>
-            </div>
-
-            <div className="p-4">
-              <div className="text-center text-gray-500 py-8">
-                No recent transactions
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
