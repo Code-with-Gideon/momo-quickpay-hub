@@ -1,5 +1,6 @@
+
 import { useState } from "react";
-import { Send, Smartphone, QrCode, Signal, Scan, PhoneCall } from "lucide-react";
+import { Send, Smartphone, QrCode, Signal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import NumberInput from "@/components/NumberInput";
 import QRScanner from "@/components/QRScanner";
@@ -7,12 +8,27 @@ import MomoPayInput from "@/components/MomoPayInput";
 import QRCodeGenerator from "@/components/QRCodeGenerator";
 import RecentTransactions from "@/components/RecentTransactions";
 import SendMoneyView from "@/components/SendMoneyView";
+import { toast } from "sonner";
 
 type Screen = "home" | "qr" | "number" | "momopay" | "generate" | "send";
 
 const Index = () => {
   const [currentScreen, setCurrentScreen] = useState<Screen>("home");
   const [mode, setMode] = useState<"send" | "receive" | null>(null);
+
+  const handleQRScanSuccess = (decodedText: string) => {
+    try {
+      const parsedData = JSON.parse(decodedText);
+      if (parsedData.code) {
+        toast.success("QR Code scanned successfully");
+        setCurrentScreen("home");
+      } else {
+        toast.error("Invalid QR code format");
+      }
+    } catch (error) {
+      toast.error("Invalid QR code");
+    }
+  };
 
   const renderContent = () => {
     if (currentScreen === "send") {
@@ -83,7 +99,12 @@ const Index = () => {
 
     switch (currentScreen) {
       case "qr":
-        return <QRScanner onBack={() => setCurrentScreen("home")} />;
+        return (
+          <QRScanner 
+            onBack={() => setCurrentScreen("home")} 
+            onScanSuccess={handleQRScanSuccess}
+          />
+        );
       case "number":
         return <NumberInput onBack={() => setCurrentScreen("home")} />;
       case "momopay":
