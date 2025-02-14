@@ -43,7 +43,7 @@ const BuyAirtimeView = ({
         </div>
       </div>
 
-      <div className="px-4 -mt-6 py-[24px]">
+      <div className="px-4 -mt-6 py-[61px]">
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm overflow-hidden p-6 space-y-6 py-[24px]">
           <div>
             <label className="text-[#070058] text-sm font-medium block mb-2">Enter Phone Number</label>
