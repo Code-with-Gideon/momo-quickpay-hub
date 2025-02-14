@@ -1,5 +1,6 @@
 
 import { Send, Smartphone, Signal } from "lucide-react";
+import { useEffect, useState } from "react";
 
 interface Transaction {
   type: "send" | "airtime" | "data";
@@ -7,21 +8,6 @@ interface Transaction {
   amount: string;
   date: "Today" | "Yesterday";
 }
-
-const mockTransactions: Transaction[] = [
-  {
-    type: "send",
-    to: "0789123456",
-    amount: "RWF 5,000",
-    date: "Today"
-  },
-  {
-    type: "send",
-    to: "0788987654",
-    amount: "RWF 1,000",
-    date: "Yesterday"
-  }
-];
 
 const getIcon = (type: Transaction["type"]) => {
   switch (type) {
@@ -46,17 +32,33 @@ const getTitle = (type: Transaction["type"]) => {
 };
 
 const RecentTransactions = () => {
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+
+  useEffect(() => {
+    const stored = localStorage.getItem("transactions");
+    if (stored) {
+      const parsedTransactions = JSON.parse(stored);
+      const formattedTransactions = parsedTransactions.map((t: any) => ({
+        type: "send" as const,
+        to: t.phoneNumber,
+        amount: t.amount,
+        date: t.date
+      }));
+      setTransactions(formattedTransactions);
+    }
+  }, []);
+
   return (
     <div className="bg-white rounded-2xl p-6 shadow-sm">
       <h2 className="text-xl font-bold text-[#070058] mb-4">Recent Transactions</h2>
-      {mockTransactions.length === 0 ? (
+      {transactions.length === 0 ? (
         <div className="text-center py-8 text-gray-500">
           No recent transactions
         </div>
       ) : (
         <div className="space-y-6">
           {Object.entries(
-            mockTransactions.reduce((acc, transaction) => {
+            transactions.reduce((acc, transaction) => {
               if (!acc[transaction.date]) {
                 acc[transaction.date] = [];
               }

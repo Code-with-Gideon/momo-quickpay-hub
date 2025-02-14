@@ -231,9 +231,9 @@ const SendMoneyView = ({ onBack }: SendMoneyViewProps) => {
       {/* Header */}
       <div className="bg-[#070058] h-[120px] relative overflow-hidden">
         <img 
-          src="/lovable-uploads/2756761c-fdb1-4650-a6cd-418a9f638498.png" 
-          alt="Wave Pattern"
-          className="absolute inset-0 w-full h-full object-cover"
+          src="/lovable-uploads/0af956c5-c425-481b-a902-d2974b9a9e0b.png" 
+          alt="Banner Background"
+          className="absolute inset-0 w-full h-full object-cover opacity-70"
         />
         <div className="relative z-10 px-4 py-6">
           <button
