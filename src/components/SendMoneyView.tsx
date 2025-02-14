@@ -164,7 +164,7 @@ const SendMoneyView = ({
             <ArrowLeft className="w-4 h-4" />
             <span>Back</span>
           </button>
-          <h1 className="text-white text-xl mx-[170px] font-bold">Send Money</h1>
+          <h1 className="text-white font-bold text-2xl mx-[90px]">Send Money</h1>
         </div>
       </div>
 
