@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Send, Smartphone, QrCode, Signal } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,6 +7,7 @@ import MomoPayInput from "@/components/MomoPayInput";
 import QRCodeGenerator from "@/components/QRCodeGenerator";
 import RecentTransactions from "@/components/RecentTransactions";
 import SendMoneyView from "@/components/SendMoneyView";
+import FeedbackForm from "@/components/FeedbackForm";
 import { toast } from "sonner";
 
 type Screen = "home" | "qr" | "number" | "momopay" | "generate" | "send";
@@ -38,7 +38,6 @@ const Index = () => {
     if (currentScreen === "home" && !mode) {
       return (
         <div className="space-y-6 px-4 py-6">
-          {/* Banner */}
           <div className="rounded-[20px] overflow-hidden h-[180px] relative shadow-lg">
             <img 
               src="/lovable-uploads/0af956c5-c425-481b-a902-d2974b9a9e0b.png" 
@@ -51,7 +50,6 @@ const Index = () => {
             </div>
           </div>
 
-          {/* Action Buttons */}
           <div className="grid grid-cols-2 gap-4">
             <Button
               onClick={() => setCurrentScreen("send")}
@@ -84,15 +82,9 @@ const Index = () => {
             </Button>
           </div>
 
-          {/* Recent Transactions */}
           <RecentTransactions />
 
-          {/* Feedback Link */}
-          <div className="text-center mt-8 mb-4">
-            <a href="#" className="text-[#070058] text-sm font-medium hover:underline transition-colors">
-              Have a Feedback?
-            </a>
-          </div>
+          <FeedbackForm />
         </div>
       );
     }
