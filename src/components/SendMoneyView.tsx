@@ -1,38 +1,61 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, QrCode, User2, Send } from "lucide-react";
+import { ArrowLeft, QrCode, User2, Send, Star } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import QRScanner from "./QRScanner";
+
 interface SendMoneyViewProps {
   onBack: () => void;
 }
+
 interface StoredTransaction {
   phoneNumber: string;
   amount: string;
   date: string;
   type: "send" | "airtime" | "data";
+  isFavorite?: boolean;
 }
-const SendMoneyView = ({
-  onBack
-}: SendMoneyViewProps) => {
+
+const SendMoneyView = ({ onBack }: SendMoneyViewProps) => {
   const [accountNumber, setAccountNumber] = useState("");
   const [step, setStep] = useState<"number" | "amount" | "scan">("number");
   const [amount, setAmount] = useState("");
   const [comment, setComment] = useState("");
   const [recentTransactions, setRecentTransactions] = useState<StoredTransaction[]>([]);
+  const [activeTab, setActiveTab] = useState<"recent" | "favorite">("recent");
+
   useEffect(() => {
     const stored = localStorage.getItem("transactions");
     if (stored) {
       setRecentTransactions(JSON.parse(stored));
     }
   }, []);
+
   const handleQuickAmount = (value: string) => {
     setAmount(value);
   };
+
   const handleSelectRecent = (phoneNumber: string) => {
     setAccountNumber(phoneNumber);
   };
+
+  const toggleFavorite = (phoneNumber: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent triggering the parent button click
+    const updatedTransactions = recentTransactions.map(transaction => {
+      if (transaction.phoneNumber === phoneNumber) {
+        return { ...transaction, isFavorite: !transaction.isFavorite };
+      }
+      return transaction;
+    });
+    localStorage.setItem("transactions", JSON.stringify(updatedTransactions));
+    setRecentTransactions(updatedTransactions);
+    toast.success(updatedTransactions.find(t => t.phoneNumber === phoneNumber)?.isFavorite 
+      ? "Added to favorites" 
+      : "Removed from favorites"
+    );
+  };
+
   const saveTransaction = (transaction: StoredTransaction) => {
     const stored = localStorage.getItem("transactions");
     const transactions = stored ? JSON.parse(stored) : [];
@@ -40,6 +63,7 @@ const SendMoneyView = ({
     localStorage.setItem("transactions", JSON.stringify(newTransactions));
     setRecentTransactions(newTransactions);
   };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (step === "number") {
@@ -71,6 +95,7 @@ const SendMoneyView = ({
     const ussdCode = `tel:*182*1*1*${accountNumber}*${amount}%23`;
     window.location.href = ussdCode;
   };
+
   const handleQRScanComplete = (scannedData: string) => {
     try {
       const parsedData = JSON.parse(scannedData);
@@ -84,10 +109,12 @@ const SendMoneyView = ({
       toast.error("Invalid QR code");
     }
   };
+
   const renderStep = () => {
     if (step === "scan") {
       return <QRScanner onBack={() => setStep("number")} onScanSuccess={handleQRScanComplete} />;
     }
+
     if (step === "amount") {
       return <div className="p-6 space-y-6">
           <div className="flex items-center gap-3">
@@ -129,37 +156,77 @@ const SendMoneyView = ({
           </Button>
         </div>;
     }
-    return <div className="space-y-6">
+
+    const filteredTransactions = activeTab === "favorite" 
+      ? recentTransactions.filter(t => t.isFavorite)
+      : recentTransactions;
+
+    return (
+      <div className="space-y-6">
         <div className="p-6">
           <h2 className="text-[#070058] text-lg font-semibold mb-4">Enter Account Number or Code</h2>
           <div className="relative">
-            <Input type="tel" placeholder="07xxxxxxxxx" value={accountNumber} onChange={e => setAccountNumber(e.target.value)} className="h-12 bg-gray-50 rounded-xl pr-12 text-base placeholder:text-gray-400" />
-            <button className="absolute right-3 top-1/2 -translate-y-1/2 hover:scale-110 transition-transform" onClick={e => {
-            e.preventDefault();
-            setStep("scan");
-          }}>
+            <Input
+              type="tel"
+              placeholder="07xxxxxxxxx"
+              value={accountNumber}
+              onChange={e => setAccountNumber(e.target.value)}
+              className="h-12 bg-gray-50 rounded-xl pr-12 text-base placeholder:text-gray-400"
+            />
+            <button
+              className="absolute right-3 top-1/2 -translate-y-1/2 hover:scale-110 transition-transform"
+              onClick={e => {
+                e.preventDefault();
+                setStep("scan");
+              }}
+            >
               <QrCode className="w-5 h-5 text-[#070058]" />
             </button>
           </div>
-          <Button type="submit" className="w-full h-12 mt-4 bg-[#070058] hover:bg-[#070058]/90 text-white text-sm font-medium rounded-xl">
+          <Button
+            type="submit"
+            className="w-full h-12 mt-4 bg-[#070058] hover:bg-[#070058]/90 text-white text-sm font-medium rounded-xl"
+          >
             Continue
           </Button>
         </div>
 
         <div className="bg-white rounded-2xl overflow-hidden">
           <div className="flex border-b">
-            <button className="flex-1 py-3 text-[#070058] text-sm font-semibold border-b-2 border-[#070058]">
+            <button
+              onClick={() => setActiveTab("recent")}
+              className={`flex-1 py-3 text-sm font-semibold transition-colors ${
+                activeTab === "recent"
+                  ? "text-[#070058] border-b-2 border-[#070058]"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
               Recents
             </button>
-            <button className="flex-1 py-3 text-gray-500 text-sm hover:text-gray-700 transition-colors">
+            <button
+              onClick={() => setActiveTab("favorite")}
+              className={`flex-1 py-3 text-sm font-semibold transition-colors ${
+                activeTab === "favorite"
+                  ? "text-[#070058] border-b-2 border-[#070058]"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
               Favorite
             </button>
           </div>
 
           <div className="divide-y">
-            {recentTransactions.length === 0 ? <div className="text-center text-gray-500 py-8 text-sm">
-                No recent transactions
-              </div> : recentTransactions.map((transaction, idx) => <button key={idx} onClick={() => handleSelectRecent(transaction.phoneNumber)} className="w-full p-4 flex items-center gap-4 hover:bg-gray-50 transition-colors">
+            {filteredTransactions.length === 0 ? (
+              <div className="text-center text-gray-500 py-8 text-sm">
+                {activeTab === "favorite" ? "No favorite transactions" : "No recent transactions"}
+              </div>
+            ) : (
+              filteredTransactions.map((transaction, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => handleSelectRecent(transaction.phoneNumber)}
+                  className="w-full p-4 flex items-center gap-4 hover:bg-gray-50 transition-colors relative"
+                >
                   <div className="w-12 h-12 rounded-full bg-[#070058] flex items-center justify-center">
                     <User2 className="w-5 h-5 text-white" />
                   </div>
@@ -167,12 +234,30 @@ const SendMoneyView = ({
                     <p className="text-sm font-medium text-[#070058]">{transaction.phoneNumber}</p>
                     <p className="text-xs text-gray-500">{transaction.date}</p>
                   </div>
-                  <p className="text-sm font-medium text-[#070058]">{transaction.amount}</p>
-                </button>)}
+                  <div className="flex items-center gap-3">
+                    <p className="text-sm font-medium text-[#070058]">{transaction.amount}</p>
+                    <button
+                      onClick={(e) => toggleFavorite(transaction.phoneNumber, e)}
+                      className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                    >
+                      <Star
+                        className={`w-5 h-5 ${
+                          transaction.isFavorite
+                            ? "fill-yellow-400 text-yellow-400"
+                            : "text-gray-400"
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </button>
+              ))
+            )}
           </div>
         </div>
-      </div>;
+      </div>
+    );
   };
+
   return <div className="min-h-screen bg-gray-50">
       <div className="bg-[#070058] h-[120px] relative overflow-hidden">
         <img src="/lovable-uploads/0af956c5-c425-481b-a902-d2974b9a9e0b.png" alt="Banner Background" className="absolute inset-0 w-full h-full object-cover opacity-70" />
@@ -192,4 +277,5 @@ const SendMoneyView = ({
       </div>
     </div>;
 };
+
 export default SendMoneyView;
