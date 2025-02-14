@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Send, Smartphone, QrCode, Signal } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,10 +8,11 @@ import MomoPayInput from "@/components/MomoPayInput";
 import QRCodeGenerator from "@/components/QRCodeGenerator";
 import RecentTransactions from "@/components/RecentTransactions";
 import SendMoneyView from "@/components/SendMoneyView";
+import BuyAirtimeView from "@/components/BuyAirtimeView";
 import FeedbackForm from "@/components/FeedbackForm";
 import { toast } from "sonner";
 
-type Screen = "home" | "qr" | "number" | "momopay" | "generate" | "send";
+type Screen = "home" | "qr" | "number" | "momopay" | "generate" | "send" | "airtime";
 
 const Index = () => {
   const [currentScreen, setCurrentScreen] = useState<Screen>("home");
@@ -33,6 +35,10 @@ const Index = () => {
   const renderContent = () => {
     if (currentScreen === "send") {
       return <SendMoneyView onBack={() => setCurrentScreen("home")} />;
+    }
+
+    if (currentScreen === "airtime") {
+      return <BuyAirtimeView onBack={() => setCurrentScreen("home")} />;
     }
 
     if (currentScreen === "home" && !mode) {
@@ -67,6 +73,7 @@ const Index = () => {
               <span className="text-sm font-medium">Generate QR Code</span>
             </Button>
             <Button
+              onClick={() => setCurrentScreen("airtime")}
               variant="outline"
               className="h-[72px] border-2 hover:bg-gray-50 text-[#070058] flex flex-col items-center justify-center gap-2 rounded-xl shadow-sm transition-all duration-200 hover:scale-[1.02]"
             >
@@ -83,7 +90,6 @@ const Index = () => {
           </div>
 
           <RecentTransactions />
-
           <FeedbackForm />
         </div>
       );
@@ -91,12 +97,7 @@ const Index = () => {
 
     switch (currentScreen) {
       case "qr":
-        return (
-          <QRScanner 
-            onBack={() => setCurrentScreen("home")} 
-            onScanSuccess={handleQRScanSuccess}
-          />
-        );
+        return <QRScanner onBack={() => setCurrentScreen("home")} onScanSuccess={handleQRScanSuccess} />;
       case "number":
         return <NumberInput onBack={() => setCurrentScreen("home")} />;
       case "momopay":
