@@ -1,44 +1,38 @@
-
 import { useState, useEffect } from "react";
 import { ArrowLeft, QrCode, User2, Send } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import QRScanner from "./QRScanner";
-
 interface SendMoneyViewProps {
   onBack: () => void;
 }
-
 interface StoredTransaction {
   phoneNumber: string;
   amount: string;
   date: string;
   type: "send" | "airtime" | "data";
 }
-
-const SendMoneyView = ({ onBack }: SendMoneyViewProps) => {
+const SendMoneyView = ({
+  onBack
+}: SendMoneyViewProps) => {
   const [accountNumber, setAccountNumber] = useState("");
   const [step, setStep] = useState<"number" | "amount" | "scan">("number");
   const [amount, setAmount] = useState("");
   const [comment, setComment] = useState("");
   const [recentTransactions, setRecentTransactions] = useState<StoredTransaction[]>([]);
-
   useEffect(() => {
     const stored = localStorage.getItem("transactions");
     if (stored) {
       setRecentTransactions(JSON.parse(stored));
     }
   }, []);
-
   const handleQuickAmount = (value: string) => {
     setAmount(value);
   };
-
   const handleSelectRecent = (phoneNumber: string) => {
     setAccountNumber(phoneNumber);
   };
-
   const saveTransaction = (transaction: StoredTransaction) => {
     const stored = localStorage.getItem("transactions");
     const transactions = stored ? JSON.parse(stored) : [];
@@ -46,46 +40,37 @@ const SendMoneyView = ({ onBack }: SendMoneyViewProps) => {
     localStorage.setItem("transactions", JSON.stringify(newTransactions));
     setRecentTransactions(newTransactions);
   };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (step === "number") {
       if (!accountNumber) {
         toast.error("Please enter an account number");
         return;
       }
-
       if (!/^07\d{8}$/.test(accountNumber)) {
         toast.error("Please enter a valid Rwanda phone number");
         return;
       }
-
       setStep("amount");
       return;
     }
-
     if (!amount) {
       toast.error("Please enter an amount");
       return;
     }
-
     if (!/^\d+$/.test(amount)) {
       toast.error("Please enter a valid amount");
       return;
     }
-
     saveTransaction({
       phoneNumber: accountNumber,
       amount: `RWF ${amount}`,
       date: "Today",
       type: "send"
     });
-
     const ussdCode = `tel:*182*1*1*${accountNumber}*${amount}%23`;
     window.location.href = ussdCode;
   };
-
   const handleQRScanComplete = (scannedData: string) => {
     try {
       const parsedData = JSON.parse(scannedData);
@@ -99,20 +84,12 @@ const SendMoneyView = ({ onBack }: SendMoneyViewProps) => {
       toast.error("Invalid QR code");
     }
   };
-
   const renderStep = () => {
     if (step === "scan") {
-      return (
-        <QRScanner 
-          onBack={() => setStep("number")} 
-          onScanSuccess={handleQRScanComplete}
-        />
-      );
+      return <QRScanner onBack={() => setStep("number")} onScanSuccess={handleQRScanComplete} />;
     }
-
     if (step === "amount") {
-      return (
-        <div className="p-6 space-y-6">
+      return <div className="p-6 space-y-6">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-full bg-[#070058] flex items-center justify-center">
               <User2 className="w-5 h-5 text-white" />
@@ -123,38 +100,17 @@ const SendMoneyView = ({ onBack }: SendMoneyViewProps) => {
           <div className="space-y-4">
             <div>
               <label className="text-[#070058] text-sm font-medium block mb-2">Amount</label>
-              <Input
-                type="number"
-                placeholder="Enter Amount"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                className="h-12 bg-gray-50 rounded-xl text-base placeholder:text-gray-400"
-              />
+              <Input type="number" placeholder="Enter Amount" value={amount} onChange={e => setAmount(e.target.value)} className="h-12 bg-gray-50 rounded-xl text-base placeholder:text-gray-400" />
             </div>
 
             <div className="grid grid-cols-3 gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => handleQuickAmount("500")}
-                className="h-10 bg-gray-50 hover:bg-gray-100 border-0 text-sm font-medium rounded-xl"
-              >
+              <Button type="button" variant="outline" onClick={() => handleQuickAmount("500")} className="h-10 bg-gray-50 hover:bg-gray-100 border-0 text-sm font-medium rounded-xl">
                 RWF 500
               </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => handleQuickAmount("1000")}
-                className="h-10 bg-gray-50 hover:bg-gray-100 border-0 text-sm font-medium rounded-xl"
-              >
+              <Button type="button" variant="outline" onClick={() => handleQuickAmount("1000")} className="h-10 bg-gray-50 hover:bg-gray-100 border-0 text-sm font-medium rounded-xl">
                 RWF 1,000
               </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => handleQuickAmount("5000")}
-                className="h-10 bg-gray-50 hover:bg-gray-100 border-0 text-sm font-medium rounded-xl"
-              >
+              <Button type="button" variant="outline" onClick={() => handleQuickAmount("5000")} className="h-10 bg-gray-50 hover:bg-gray-100 border-0 text-sm font-medium rounded-xl">
                 RWF 5,000
               </Button>
             </div>
@@ -163,52 +119,29 @@ const SendMoneyView = ({ onBack }: SendMoneyViewProps) => {
               <label className="text-[#070058] text-sm font-medium block mb-2">
                 Comment <span className="text-gray-400 font-normal">(Optional)</span>
               </label>
-              <Input
-                placeholder="eg: Store Payment"
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                className="h-12 bg-gray-50 rounded-xl placeholder:text-gray-400"
-              />
+              <Input placeholder="eg: Store Payment" value={comment} onChange={e => setComment(e.target.value)} className="h-12 bg-gray-50 rounded-xl placeholder:text-gray-400" />
             </div>
           </div>
 
-          <Button
-            type="submit"
-            className="w-full h-12 bg-[#070058] hover:bg-[#070058]/90 text-white text-sm font-medium rounded-xl flex items-center justify-center gap-2"
-          >
+          <Button type="submit" className="w-full h-12 bg-[#070058] hover:bg-[#070058]/90 text-white text-sm font-medium rounded-xl flex items-center justify-center gap-2">
             <Send className="w-4 h-4" />
             Send Money
           </Button>
-        </div>
-      );
+        </div>;
     }
-
-    return (
-      <div className="space-y-6">
+    return <div className="space-y-6">
         <div className="p-6">
           <h2 className="text-[#070058] text-lg font-semibold mb-4">Enter Account Number or Code</h2>
           <div className="relative">
-            <Input
-              type="tel"
-              placeholder="07xxxxxxxxx"
-              value={accountNumber}
-              onChange={(e) => setAccountNumber(e.target.value)}
-              className="h-12 bg-gray-50 rounded-xl pr-12 text-base placeholder:text-gray-400"
-            />
-            <button 
-              className="absolute right-3 top-1/2 -translate-y-1/2 hover:scale-110 transition-transform"
-              onClick={(e) => {
-                e.preventDefault();
-                setStep("scan");
-              }}
-            >
+            <Input type="tel" placeholder="07xxxxxxxxx" value={accountNumber} onChange={e => setAccountNumber(e.target.value)} className="h-12 bg-gray-50 rounded-xl pr-12 text-base placeholder:text-gray-400" />
+            <button className="absolute right-3 top-1/2 -translate-y-1/2 hover:scale-110 transition-transform" onClick={e => {
+            e.preventDefault();
+            setStep("scan");
+          }}>
               <QrCode className="w-5 h-5 text-[#070058]" />
             </button>
           </div>
-          <Button
-            type="submit"
-            className="w-full h-12 mt-4 bg-[#070058] hover:bg-[#070058]/90 text-white text-sm font-medium rounded-xl"
-          >
+          <Button type="submit" className="w-full h-12 mt-4 bg-[#070058] hover:bg-[#070058]/90 text-white text-sm font-medium rounded-xl">
             Continue
           </Button>
         </div>
@@ -224,17 +157,9 @@ const SendMoneyView = ({ onBack }: SendMoneyViewProps) => {
           </div>
 
           <div className="divide-y">
-            {recentTransactions.length === 0 ? (
-              <div className="text-center text-gray-500 py-8 text-sm">
+            {recentTransactions.length === 0 ? <div className="text-center text-gray-500 py-8 text-sm">
                 No recent transactions
-              </div>
-            ) : (
-              recentTransactions.map((transaction, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => handleSelectRecent(transaction.phoneNumber)}
-                  className="w-full p-4 flex items-center gap-4 hover:bg-gray-50 transition-colors"
-                >
+              </div> : recentTransactions.map((transaction, idx) => <button key={idx} onClick={() => handleSelectRecent(transaction.phoneNumber)} className="w-full p-4 flex items-center gap-4 hover:bg-gray-50 transition-colors">
                   <div className="w-12 h-12 rounded-full bg-[#070058] flex items-center justify-center">
                     <User2 className="w-5 h-5 text-white" />
                   </div>
@@ -243,42 +168,28 @@ const SendMoneyView = ({ onBack }: SendMoneyViewProps) => {
                     <p className="text-xs text-gray-500">{transaction.date}</p>
                   </div>
                   <p className="text-sm font-medium text-[#070058]">{transaction.amount}</p>
-                </button>
-              ))
-            )}
+                </button>)}
           </div>
         </div>
-      </div>
-    );
+      </div>;
   };
-
-  return (
-    <div className="min-h-screen bg-gray-50">
+  return <div className="min-h-screen bg-gray-50">
       <div className="bg-[#070058] h-[120px] relative overflow-hidden">
-        <img 
-          src="/lovable-uploads/0af956c5-c425-481b-a902-d2974b9a9e0b.png" 
-          alt="Banner Background"
-          className="absolute inset-0 w-full h-full object-cover opacity-70"
-        />
+        <img src="/lovable-uploads/0af956c5-c425-481b-a902-d2974b9a9e0b.png" alt="Banner Background" className="absolute inset-0 w-full h-full object-cover opacity-70" />
         <div className="relative z-10 px-4 py-6">
-          <button
-            onClick={onBack}
-            className="text-white flex items-center gap-2 mb-3 hover:opacity-90 transition-opacity text-sm"
-          >
+          <button onClick={onBack} className="text-white flex items-center gap-2 mb-3 hover:opacity-90 transition-opacity text-sm">
             <ArrowLeft className="w-4 h-4" />
             <span>Back</span>
           </button>
-          <h1 className="text-white font-bold text-2xl mx-[90px]">Send Money</h1>
+          <h1 className="text-white font-bold text-2xl mx-[100px]">Send Money</h1>
         </div>
       </div>
 
-      <div className="px-4 -mt-6">
+      <div className="px-4 -mt-6 py-[50px]">
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm overflow-hidden">
           {renderStep()}
         </form>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default SendMoneyView;
