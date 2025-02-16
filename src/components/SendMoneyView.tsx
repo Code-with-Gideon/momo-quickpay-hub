@@ -41,7 +41,7 @@ const SendMoneyView = ({ onBack }: SendMoneyViewProps) => {
   };
 
   const toggleFavorite = (phoneNumber: string, e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent triggering the parent button click
+    e.stopPropagation();
     const updatedTransactions = recentTransactions.map(transaction => {
       if (transaction.phoneNumber === phoneNumber) {
         return { ...transaction, isFavorite: !transaction.isFavorite };
@@ -266,7 +266,7 @@ const SendMoneyView = ({ onBack }: SendMoneyViewProps) => {
             <ArrowLeft className="w-4 h-4" />
             <span>Back</span>
           </button>
-          <h1 className="text-white font-bold text-2xl mx-[100px]">Send Money</h1>
+          <h1 className="text-white font-bold text-2xl text-center">Send Money</h1>
         </div>
       </div>
 
