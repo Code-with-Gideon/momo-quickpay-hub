@@ -1,5 +1,6 @@
+
 import { useState, useEffect } from "react";
-import { ArrowLeft, QrCode, User2, Send, Star } from "lucide-react";
+import { ArrowLeft, QrCode, User2, Send, Star, Store } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -15,6 +16,7 @@ interface StoredTransaction {
   date: string;
   type: "send" | "airtime" | "data";
   isFavorite?: boolean;
+  isMomoPay?: boolean;
 }
 
 const SendMoneyView = ({ onBack }: SendMoneyViewProps) => {
@@ -24,6 +26,7 @@ const SendMoneyView = ({ onBack }: SendMoneyViewProps) => {
   const [comment, setComment] = useState("");
   const [recentTransactions, setRecentTransactions] = useState<StoredTransaction[]>([]);
   const [activeTab, setActiveTab] = useState<"recent" | "favorite">("recent");
+  const [isMomoPay, setIsMomoPay] = useState(false);
 
   useEffect(() => {
     const stored = localStorage.getItem("send_money_history");
@@ -32,12 +35,18 @@ const SendMoneyView = ({ onBack }: SendMoneyViewProps) => {
     }
   }, []);
 
+  useEffect(() => {
+    // Check if the input matches MomoPay format (5 digits)
+    setIsMomoPay(/^\d{5}$/.test(accountNumber));
+  }, [accountNumber]);
+
   const handleQuickAmount = (value: string) => {
     setAmount(value);
   };
 
-  const handleSelectRecent = (phoneNumber: string) => {
-    setAccountNumber(phoneNumber);
+  const handleSelectRecent = (transaction: StoredTransaction) => {
+    setAccountNumber(transaction.phoneNumber);
+    setIsMomoPay(transaction.isMomoPay || false);
   };
 
   const toggleFavorite = (phoneNumber: string, e: React.MouseEvent) => {
@@ -48,7 +57,7 @@ const SendMoneyView = ({ onBack }: SendMoneyViewProps) => {
       }
       return transaction;
     });
-    localStorage.setItem("transactions", JSON.stringify(updatedTransactions));
+    localStorage.setItem("send_money_history", JSON.stringify(updatedTransactions));
     setRecentTransactions(updatedTransactions);
     toast.success(updatedTransactions.find(t => t.phoneNumber === phoneNumber)?.isFavorite 
       ? "Added to favorites" 
@@ -72,11 +81,15 @@ const SendMoneyView = ({ onBack }: SendMoneyViewProps) => {
     e.preventDefault();
     if (step === "number") {
       if (!accountNumber) {
-        toast.error("Please enter an account number");
+        toast.error("Please enter an account number or MomoPay code");
         return;
       }
-      if (!/^07\d{8}$/.test(accountNumber)) {
+      if (!isMomoPay && !/^07\d{8}$/.test(accountNumber)) {
         toast.error("Please enter a valid Rwanda phone number");
+        return;
+      }
+      if (isMomoPay && !/^\d{5}$/.test(accountNumber)) {
+        toast.error("Please enter a valid MomoPay code (5 digits)");
         return;
       }
       setStep("amount");
@@ -90,21 +103,29 @@ const SendMoneyView = ({ onBack }: SendMoneyViewProps) => {
       toast.error("Please enter a valid amount");
       return;
     }
+
     saveTransaction({
       phoneNumber: accountNumber,
       amount: `RWF ${amount}`,
       date: "Today",
-      type: "send"
+      type: "send",
+      isMomoPay
     });
-    const ussdCode = `tel:*182*1*1*${accountNumber}*${amount}%23`;
+
+    // Different USSD format for MomoPay and regular transfers
+    const ussdCode = isMomoPay
+      ? `tel:*182*8*1*${accountNumber}*${amount}%23`
+      : `tel:*182*1*1*${accountNumber}*${amount}%23`;
     window.location.href = ussdCode;
   };
 
   const handleQRScanComplete = (scannedData: string) => {
     try {
       const parsedData = JSON.parse(scannedData);
-      if (parsedData.code && /^07\d{8}$/.test(parsedData.code)) {
+      if (parsedData.code) {
         setAccountNumber(parsedData.code);
+        // Check if the scanned code is a MomoPay code
+        setIsMomoPay(/^\d{5}$/.test(parsedData.code));
         setStep("amount");
       } else {
         toast.error("Invalid QR code format");
@@ -123,9 +144,12 @@ const SendMoneyView = ({ onBack }: SendMoneyViewProps) => {
       return <div className="p-6 space-y-6">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-full bg-[#070058] flex items-center justify-center">
-              <User2 className="w-5 h-5 text-white" />
+              {isMomoPay ? <Store className="w-5 h-5 text-white" /> : <User2 className="w-5 h-5 text-white" />}
             </div>
-            <span className="text-[#070058] text-base font-medium">{accountNumber}</span>
+            <div>
+              <span className="text-[#070058] text-base font-medium">{accountNumber}</span>
+              {isMomoPay && <p className="text-sm text-gray-500">MomoPay Code</p>}
+            </div>
           </div>
 
           <div className="space-y-4">
@@ -168,11 +192,11 @@ const SendMoneyView = ({ onBack }: SendMoneyViewProps) => {
     return (
       <div className="space-y-6">
         <div className="p-6">
-          <h2 className="text-[#070058] text-lg font-semibold mb-4">Enter Account Number or Code</h2>
+          <h2 className="text-[#070058] text-lg font-semibold mb-4">Enter Account Number or MomoPay Code</h2>
           <div className="relative">
             <Input
-              type="tel"
-              placeholder="07xxxxxxxxx"
+              type="text"
+              placeholder={isMomoPay ? "Enter 5-digit MomoPay code" : "07xxxxxxxxx"}
               value={accountNumber}
               onChange={e => setAccountNumber(e.target.value)}
               className="h-12 bg-gray-50 rounded-xl pr-12 text-base placeholder:text-gray-400"
@@ -228,14 +252,15 @@ const SendMoneyView = ({ onBack }: SendMoneyViewProps) => {
               filteredTransactions.map((transaction, idx) => (
                 <button
                   key={idx}
-                  onClick={() => handleSelectRecent(transaction.phoneNumber)}
+                  onClick={() => handleSelectRecent(transaction)}
                   className="w-full p-4 flex items-center gap-4 hover:bg-gray-50 transition-colors relative"
                 >
                   <div className="w-12 h-12 rounded-full bg-[#070058] flex items-center justify-center">
-                    <User2 className="w-5 h-5 text-white" />
+                    {transaction.isMomoPay ? <Store className="w-5 h-5 text-white" /> : <User2 className="w-5 h-5 text-white" />}
                   </div>
                   <div className="flex-1 text-left">
                     <p className="text-sm font-medium text-[#070058]">{transaction.phoneNumber}</p>
+                    {transaction.isMomoPay && <p className="text-xs text-gray-500">MomoPay Code</p>}
                     <p className="text-xs text-gray-500">{transaction.date}</p>
                   </div>
                   <div className="flex items-center gap-3">
