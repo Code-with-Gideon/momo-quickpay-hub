@@ -26,7 +26,7 @@ const SendMoneyView = ({ onBack }: SendMoneyViewProps) => {
   const [activeTab, setActiveTab] = useState<"recent" | "favorite">("recent");
 
   useEffect(() => {
-    const stored = localStorage.getItem("transactions");
+    const stored = localStorage.getItem("send_money_history");
     if (stored) {
       setRecentTransactions(JSON.parse(stored));
     }
@@ -57,11 +57,15 @@ const SendMoneyView = ({ onBack }: SendMoneyViewProps) => {
   };
 
   const saveTransaction = (transaction: StoredTransaction) => {
-    const stored = localStorage.getItem("transactions");
+    const stored = localStorage.getItem("send_money_history");
     const transactions = stored ? JSON.parse(stored) : [];
     const newTransactions = [transaction, ...transactions].slice(0, 10);
-    localStorage.setItem("transactions", JSON.stringify(newTransactions));
-    setRecentTransactions(newTransactions);
+    localStorage.setItem("send_money_history", JSON.stringify(newTransactions));
+    
+    // Also save to general transactions for the main dashboard
+    const generalStored = localStorage.getItem("transactions");
+    const generalTransactions = generalStored ? JSON.parse(generalStored) : [];
+    localStorage.setItem("transactions", JSON.stringify([transaction, ...generalTransactions].slice(0, 10)));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
