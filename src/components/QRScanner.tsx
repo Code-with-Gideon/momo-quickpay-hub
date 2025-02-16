@@ -60,35 +60,26 @@ const QRScanner = ({ onBack, onScanSuccess }: QRScannerProps) => {
 
       <h2 className="text-[#070058] text-lg font-semibold">Scan QR Code</h2>
       
-      <div className="qr-scanner-container">
+      <div className="relative min-h-[400px]">
         {/* Required elements for html5-qrcode library */}
-        <div id="reader" className="w-full"></div>
+        <div id="reader" className="w-full !border-none"></div>
         <div id="reader__status_span" className="hidden"></div>
-        <div id="reader__scan_region" className="hidden"></div>
+        <div id="reader__scan_region" className="hidden !bg-white !rounded-xl"></div>
         <div id="reader__dashboard_section" className="hidden"></div>
         <div id="reader__header_message" className="hidden"></div>
       </div>
 
-      <style jsx>{`
-        .qr-scanner-container {
-          position: relative;
-          min-height: 400px;
-        }
-        #reader {
-          width: 100% !important;
-          border: none !important;
-        }
-        #reader__scan_region {
-          background: white !important;
-          border-radius: 12px !important;
-        }
-        #reader__scan_region > img {
-          display: none;
-        }
-        #reader video {
-          border-radius: 12px !important;
-        }
-      `}</style>
+      {/* Additional global styles for QR scanner elements */}
+      <style>
+        {`
+          #reader__scan_region > img {
+            display: none;
+          }
+          #reader video {
+            border-radius: 12px;
+          }
+        `}
+      </style>
     </div>
   );
 };
