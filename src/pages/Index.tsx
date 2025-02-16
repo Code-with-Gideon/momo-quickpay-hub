@@ -59,7 +59,7 @@ const Index = () => {
           <div className="grid grid-cols-2 gap-4">
             <Button
               onClick={() => setCurrentScreen("send")}
-              className="h-[72px] bg-[#070058] hover:bg-[#070058]/90 text-white flex flex-col items-center justify-center gap-2 rounded-xl shadow-md transition-all duration-200 hover:scale-[1.02]"
+              className="h-[72px] bg-[#070058] hover:bg-[#070058]/90 text-white flex flex-col items-center justify-center gap-2 rounded-xl shadow-md transition-all duration-200 hover:scale-[1.02] text-center"
             >
               <Send className="w-6 h-6" />
               <span className="text-sm font-medium">Send Money</span>
@@ -67,7 +67,7 @@ const Index = () => {
             <Button
               onClick={() => setCurrentScreen("generate")}
               variant="outline"
-              className="h-[72px] border-2 hover:bg-gray-50 text-[#070058] flex flex-col items-center justify-center gap-2 rounded-xl shadow-sm transition-all duration-200 hover:scale-[1.02]"
+              className="h-[72px] border-2 hover:bg-gray-50 text-[#070058] flex flex-col items-center justify-center gap-2 rounded-xl shadow-sm transition-all duration-200 hover:scale-[1.02] text-center"
             >
               <QrCode className="w-6 h-6" />
               <span className="text-sm font-medium">Generate QR Code</span>
@@ -75,14 +75,14 @@ const Index = () => {
             <Button
               onClick={() => setCurrentScreen("airtime")}
               variant="outline"
-              className="h-[72px] border-2 hover:bg-gray-50 text-[#070058] flex flex-col items-center justify-center gap-2 rounded-xl shadow-sm transition-all duration-200 hover:scale-[1.02]"
+              className="h-[72px] border-2 hover:bg-gray-50 text-[#070058] flex flex-col items-center justify-center gap-2 rounded-xl shadow-sm transition-all duration-200 hover:scale-[1.02] text-center"
             >
               <Smartphone className="w-6 h-6" />
               <span className="text-sm font-medium">Buy Airtime</span>
             </Button>
             <Button
               variant="outline"
-              className="h-[72px] border-2 hover:bg-gray-50 text-[#070058] flex flex-col items-center justify-center gap-2 rounded-xl shadow-sm transition-all duration-200 hover:scale-[1.02]"
+              className="h-[72px] border-2 hover:bg-gray-50 text-[#070058] flex flex-col items-center justify-center gap-2 rounded-xl shadow-sm transition-all duration-200 hover:scale-[1.02] text-center"
             >
               <Signal className="w-6 h-6" />
               <span className="text-sm font-medium">Buy Data</span>

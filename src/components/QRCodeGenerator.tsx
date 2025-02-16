@@ -111,11 +111,11 @@ const QRCodeGenerator = ({ onBack }: QRCodeGeneratorProps) => {
     }
   };
 
-  // Create a URL-friendly JSON string for the QR code that includes the web app URL
+  // Create a URL-friendly JSON string for the QR code
   const qrData = JSON.stringify({
     type: paymentType,
     code: code,
-    redirectUrl: "https://qpay.com.ng/"
+    redirectUrl: window.location.origin
   });
 
   return (

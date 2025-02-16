@@ -39,7 +39,7 @@ const RecentTransactions = () => {
     if (stored) {
       const parsedTransactions = JSON.parse(stored);
       const formattedTransactions = parsedTransactions.map((t: any) => ({
-        type: "send" as const,
+        type: t.type || "send",
         to: t.phoneNumber,
         amount: t.amount,
         date: t.date

@@ -1,19 +1,24 @@
+
 import { useState } from "react";
 import { ArrowLeft, Smartphone } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+
 interface BuyAirtimeViewProps {
   onBack: () => void;
 }
+
 const BuyAirtimeView = ({
   onBack
 }: BuyAirtimeViewProps) => {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [amount, setAmount] = useState("");
+
   const handleQuickAmount = (value: string) => {
     setAmount(value);
   };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!phoneNumber) {
@@ -28,18 +33,31 @@ const BuyAirtimeView = ({
       toast.error("Please enter an amount");
       return;
     }
-    const ussdCode = `tel:*182*2*1*${phoneNumber}*${amount}%23`;
+
+    // Save transaction to localStorage
+    const transaction = {
+      phoneNumber,
+      amount: `RWF ${amount}`,
+      date: "Today",
+      type: "airtime" as const
+    };
+    const stored = localStorage.getItem("transactions");
+    const transactions = stored ? JSON.parse(stored) : [];
+    localStorage.setItem("transactions", JSON.stringify([transaction, ...transactions].slice(0, 10)));
+
+    const ussdCode = `tel:*182*2*1*1*2*${amount}*${phoneNumber}%23`;
     window.location.href = ussdCode;
   };
+
   return <div className="min-h-screen bg-gray-50">
       <div className="bg-[#070058] h-[120px] relative overflow-hidden">
-        <img src="/lovable-uploads/d102728f-7e27-408b-a1b2-ff087d87e87f.png" alt="Banner Background" className="absolute inset-0 w-full h-full object-cover opacity-70" />
+        <img src="/lovable-uploads/0af956c5-c425-481b-a902-d2974b9a9e0b.png" alt="Banner Background" className="absolute inset-0 w-full h-full object-cover opacity-70" />
         <div className="relative z-10 px-4 py-6">
           <button onClick={onBack} className="text-white flex items-center gap-2 mb-3 hover:opacity-90 transition-opacity text-sm">
             <ArrowLeft className="w-4 h-4" />
             <span>Back</span>
           </button>
-          <h1 className="text-white font-bold text-2xl mx-[100px]">Buy Airtime</h1>
+          <h1 className="text-white font-bold text-2xl text-center">Buy Airtime</h1>
         </div>
       </div>
 
@@ -68,4 +86,5 @@ const BuyAirtimeView = ({
       </div>
     </div>;
 };
+
 export default BuyAirtimeView;
