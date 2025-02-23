@@ -32,7 +32,7 @@ const allPlans: DataPlan[] = [
     id: "1",
     name: "200MB",
     duration: "24hrs",
-    category: "hot",
+    category: "daily",
     price: 100,
     features: ["200MB / 24hrs"]
   },
@@ -40,7 +40,7 @@ const allPlans: DataPlan[] = [
     id: "2",
     name: "500MB",
     duration: "24hrs",
-    category: "hot",
+    category: "daily",
     price: 200,
     features: ["500MB / 24hrs"]
   },
