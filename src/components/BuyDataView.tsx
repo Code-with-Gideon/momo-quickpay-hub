@@ -142,18 +142,27 @@ const BuyDataView = ({ onBack }: BuyDataViewProps) => {
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden p-6 space-y-6">
           <div className="space-y-2">
             <label className="text-[#070058] text-lg font-semibold block">Enter Phone Number</label>
-            <Select value={phoneNumber} onValueChange={setPhoneNumber}>
-              <SelectTrigger className="h-12 bg-gray-50 rounded-xl text-base placeholder:text-gray-400 border-0">
-                <SelectValue placeholder="07xxxxxxxxx" />
-              </SelectTrigger>
-              <SelectContent>
-                {recentNumbers.map(number => (
-                  <SelectItem key={number} value={number}>
-                    {number}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Input
+              type="tel"
+              placeholder="07xxxxxxxxx"
+              value={phoneNumber}
+              onChange={(e) => handlePhoneNumberChange(e.target.value)}
+              className="h-12 bg-gray-50 rounded-xl text-base placeholder:text-gray-400 border-0"
+            />
+            {recentNumbers.length > 0 && (
+              <Select value={phoneNumber} onValueChange={setPhoneNumber}>
+                <SelectTrigger className="h-12 bg-gray-50 rounded-xl text-base placeholder:text-gray-400 border-0">
+                  <SelectValue placeholder="Select from recent numbers" />
+                </SelectTrigger>
+                <SelectContent>
+                  {recentNumbers.map(number => (
+                    <SelectItem key={number} value={number}>
+                      {number}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
           <Tabs defaultValue="hot" className="w-full" onValueChange={setSelectedTab}>
