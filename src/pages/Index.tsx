@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Send, Smartphone, QrCode, Signal } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,10 +8,11 @@ import QRCodeGenerator from "@/components/QRCodeGenerator";
 import RecentTransactions from "@/components/RecentTransactions";
 import SendMoneyView from "@/components/SendMoneyView";
 import BuyAirtimeView from "@/components/BuyAirtimeView";
+import BuyDataView from "@/components/BuyDataView";
 import FeedbackForm from "@/components/FeedbackForm";
 import { toast } from "sonner";
 
-type Screen = "home" | "qr" | "number" | "momopay" | "generate" | "send" | "airtime";
+type Screen = "home" | "qr" | "number" | "momopay" | "generate" | "send" | "airtime" | "data";
 
 const Index = () => {
   const [currentScreen, setCurrentScreen] = useState<Screen>("home");
@@ -39,6 +39,10 @@ const Index = () => {
 
     if (currentScreen === "airtime") {
       return <BuyAirtimeView onBack={() => setCurrentScreen("home")} />;
+    }
+
+    if (currentScreen === "data") {
+      return <BuyDataView onBack={() => setCurrentScreen("home")} />;
     }
 
     if (currentScreen === "home" && !mode) {
@@ -81,6 +85,7 @@ const Index = () => {
               <span className="text-sm font-medium">Buy Airtime</span>
             </Button>
             <Button
+              onClick={() => setCurrentScreen("data")}
               variant="outline"
               className="h-[72px] border-2 hover:bg-gray-50 text-[#070058] flex flex-col items-center justify-center gap-2 rounded-xl shadow-sm transition-all duration-200 hover:scale-[1.02] text-center"
             >

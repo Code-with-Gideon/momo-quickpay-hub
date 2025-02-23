@@ -1,0 +1,237 @@
+
+import { useState, useEffect } from "react";
+import { ArrowLeft, ChevronDown } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+interface BuyDataViewProps {
+  onBack: () => void;
+}
+
+interface DataPlan {
+  id: string;
+  name: string;
+  duration: string;
+  category: "hot" | "daily" | "weekly" | "monthly";
+  price: number;
+  features: string[];
+}
+
+const dataPlansByCategory: Record<string, DataPlan[]> = {
+  hot: [
+    {
+      id: "1",
+      name: "200MB",
+      duration: "24hrs",
+      category: "hot",
+      price: 100,
+      features: ["200MB / 24hrs"]
+    },
+    {
+      id: "2",
+      name: "500MB",
+      duration: "24hrs",
+      category: "hot",
+      price: 200,
+      features: ["500MB / 24hrs"]
+    }
+  ],
+  daily: [
+    {
+      id: "3",
+      name: "200MB",
+      duration: "24hrs",
+      category: "daily",
+      price: 100,
+      features: ["200MB / 24hrs"]
+    },
+    {
+      id: "4",
+      name: "500MB",
+      duration: "24hrs",
+      category: "daily",
+      price: 200,
+      features: ["500MB / 24hrs"]
+    }
+  ],
+  weekly: [
+    {
+      id: "5",
+      name: "8GB + 800Mins",
+      duration: "7 days",
+      category: "weekly",
+      price: 3000,
+      features: ["8GB + 800Mins", "30 SMS"]
+    },
+    {
+      id: "6",
+      name: "7GB",
+      duration: "Mon to Fri",
+      category: "weekly",
+      price: 1000,
+      features: ["7GB (Mon to Fri)", "30 SMS"]
+    }
+  ],
+  monthly: [
+    {
+      id: "7",
+      name: "1GB Per Day",
+      duration: "30 days",
+      category: "monthly",
+      price: 5000,
+      features: ["1GB Per Day", "200 SMS"]
+    },
+    {
+      id: "8",
+      name: "2GB Per Day",
+      duration: "30 days",
+      category: "monthly",
+      price: 5000,
+      features: ["2GB Per Day", "200 SMS"]
+    }
+  ]
+};
+
+const BuyDataView = ({ onBack }: BuyDataViewProps) => {
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [recentNumbers, setRecentNumbers] = useState<string[]>([]);
+  const [selectedTab, setSelectedTab] = useState("hot");
+
+  useEffect(() => {
+    const stored = localStorage.getItem("recent_data_numbers");
+    if (stored) {
+      setRecentNumbers(JSON.parse(stored));
+    }
+  }, []);
+
+  const handlePlanSelection = (plan: DataPlan) => {
+    if (!phoneNumber) {
+      toast.error("Please enter a phone number");
+      return;
+    }
+
+    // Save the number to recent numbers
+    const updatedNumbers = [phoneNumber, ...recentNumbers.filter(n => n !== phoneNumber)].slice(0, 5);
+    localStorage.setItem("recent_data_numbers", JSON.stringify(updatedNumbers));
+
+    // Format: *182*8*2*1# for data bundles
+    const ussdCode = `tel:*182*8*2*1%23`;
+    window.location.href = ussdCode;
+
+    // Save to transactions history
+    const transaction = {
+      phoneNumber,
+      amount: `RWF ${plan.price}`,
+      date: "Today",
+      type: "data",
+    };
+
+    const stored = localStorage.getItem("transactions");
+    const transactions = stored ? JSON.parse(stored) : [];
+    localStorage.setItem("transactions", JSON.stringify([transaction, ...transactions].slice(0, 10)));
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="bg-[#070058] h-[120px] relative overflow-hidden">
+        <img 
+          src="/lovable-uploads/0af956c5-c425-481b-a902-d2974b9a9e0b.png" 
+          alt="Banner Background" 
+          className="absolute inset-0 w-full h-full object-cover opacity-70" 
+        />
+        <div className="relative z-10 px-4 py-6">
+          <button onClick={onBack} className="text-white flex items-center gap-2 mb-3 hover:opacity-90 transition-opacity text-sm">
+            <ArrowLeft className="w-4 h-4" />
+            <span>Back</span>
+          </button>
+          <h1 className="text-white font-bold text-2xl text-center">Buy Data</h1>
+        </div>
+      </div>
+
+      <div className="px-4 -mt-6">
+        <div className="bg-white rounded-2xl shadow-sm overflow-hidden p-6 space-y-6">
+          <div className="space-y-2">
+            <label className="text-[#070058] text-lg font-semibold block">Enter Phone Number</label>
+            <Select value={phoneNumber} onValueChange={setPhoneNumber}>
+              <SelectTrigger className="h-12 bg-gray-50 rounded-xl text-base placeholder:text-gray-400 border-0">
+                <SelectValue placeholder="07xxxxxxxxx" />
+              </SelectTrigger>
+              <SelectContent>
+                {recentNumbers.map((number) => (
+                  <SelectItem key={number} value={number}>
+                    {number}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <Tabs defaultValue="hot" className="w-full" onValueChange={setSelectedTab}>
+            <TabsList className="w-full grid grid-cols-4 gap-4 bg-transparent h-auto p-0">
+              <TabsTrigger
+                value="hot"
+                className="data-[state=active]:bg-[#070058] data-[state=active]:text-white border rounded-lg py-2"
+              >
+                Hot Deals
+              </TabsTrigger>
+              <TabsTrigger
+                value="daily"
+                className="data-[state=active]:bg-[#070058] data-[state=active]:text-white border rounded-lg py-2"
+              >
+                Daily
+              </TabsTrigger>
+              <TabsTrigger
+                value="weekly"
+                className="data-[state=active]:bg-[#070058] data-[state=active]:text-white border rounded-lg py-2"
+              >
+                Weekly
+              </TabsTrigger>
+              <TabsTrigger
+                value="monthly"
+                className="data-[state=active]:bg-[#070058] data-[state=active]:text-white border rounded-lg py-2"
+              >
+                Monthly
+              </TabsTrigger>
+            </TabsList>
+
+            {Object.entries(dataPlansByCategory).map(([category, plans]) => (
+              <TabsContent key={category} value={category} className="mt-6">
+                <div className="grid grid-cols-2 gap-4">
+                  {plans.map((plan) => (
+                    <button
+                      key={plan.id}
+                      onClick={() => handlePlanSelection(plan)}
+                      className="bg-gray-50 rounded-xl p-4 text-center space-y-2 hover:bg-gray-100 transition-colors"
+                    >
+                      <div className="text-xs text-gray-500 capitalize">{plan.category}</div>
+                      <div className="space-y-1">
+                        {plan.features.map((feature, idx) => (
+                          <div key={idx} className="text-[#070058] font-semibold">
+                            {feature}
+                          </div>
+                        ))}
+                      </div>
+                      <div className="text-[#070058] font-bold mt-2">
+                        RWF {plan.price.toLocaleString()}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </TabsContent>
+            ))}
+          </Tabs>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default BuyDataView;
