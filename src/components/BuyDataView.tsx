@@ -153,7 +153,7 @@ const BuyDataView = ({ onBack }: BuyDataViewProps) => {
               {recentNumbers.length > 0 && (
                 <Select value={phoneNumber} onValueChange={setPhoneNumber}>
                   <SelectTrigger className="absolute right-0 top-0 h-12 w-24 bg-transparent border-0 hover:bg-gray-100 rounded-r-xl transition-colors">
-                    <SelectValue placeholder="Recent" />
+                    Recent
                   </SelectTrigger>
                   <SelectContent>
                     {recentNumbers.map(number => (
