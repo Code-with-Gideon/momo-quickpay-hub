@@ -50,7 +50,7 @@ const allPlans: DataPlan[] = [
     duration: "7 days",
     category: "weekly",
     price: 3000,
-    features: ["8GB + 800Mins", "30 SMS"]
+    features: ["8GB + 800Mins", "+ 30 SMS"]
   },
   {
     id: "4",
@@ -58,7 +58,7 @@ const allPlans: DataPlan[] = [
     duration: "Mon to Fri",
     category: "weekly",
     price: 1000,
-    features: ["7GB (Mon to Fri)", "30 SMS"]
+    features: ["7GB (Mon to Fri)", "+ 30 SMS"]
   },
   {
     id: "5",
@@ -66,7 +66,7 @@ const allPlans: DataPlan[] = [
     duration: "30 days",
     category: "monthly",
     price: 5000,
-    features: ["1GB Per Day", "200 SMS"]
+    features: ["1GB Per Day", "+ 200 SMS"]
   }
 ];
 
