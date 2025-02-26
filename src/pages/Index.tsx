@@ -55,7 +55,7 @@ const Index = () => {
             </Button>
             <Button onClick={() => setCurrentScreen("generate")} variant="outline" className="h-[72px] border-2 hover:bg-gray-50 text-[#070058] flex flex-col items-center justify-center gap-2 rounded-xl shadow-sm transition-all duration-200 hover:scale-[1.02] text-center">
               <QrCode className="w-6 h-6" />
-              <span className="text-sm font-medium">Generate Payment QR Code</span>
+              <span className="text-sm font-medium">Recieve Money</span>
             </Button>
             <Button onClick={() => setCurrentScreen("airtime")} variant="outline" className="h-[72px] border-2 hover:bg-gray-50 text-[#070058] flex flex-col items-center justify-center gap-2 rounded-xl shadow-sm transition-all duration-200 hover:scale-[1.02] text-center">
               <Smartphone className="w-6 h-6" />
