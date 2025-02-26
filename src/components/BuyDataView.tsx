@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { ArrowLeft, ChevronDown } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -26,7 +25,6 @@ interface DataPlan {
   features: string[];
 }
 
-// All plans will be available in hot deals
 const allPlans: DataPlan[] = [
   {
     id: "1",
@@ -71,7 +69,7 @@ const allPlans: DataPlan[] = [
 ];
 
 const dataPlansByCategory: Record<string, DataPlan[]> = {
-  hot: allPlans, // Show all plans in hot deals
+  hot: allPlans,
   daily: allPlans.filter(plan => plan.category === "daily"),
   weekly: allPlans.filter(plan => plan.category === "weekly"),
   monthly: allPlans.filter(plan => plan.category === "monthly")
@@ -90,7 +88,6 @@ const BuyDataView = ({ onBack }: BuyDataViewProps) => {
   }, []);
 
   const handlePhoneNumberChange = (value: string) => {
-    // Only allow numbers and limit to 10 digits
     const cleaned = value.replace(/[^0-9]/g, '').slice(0, 10);
     setPhoneNumber(cleaned);
   };
@@ -101,15 +98,18 @@ const BuyDataView = ({ onBack }: BuyDataViewProps) => {
       return;
     }
 
-    // Save the number to recent numbers
     const updatedNumbers = [phoneNumber, ...recentNumbers.filter(n => n !== phoneNumber)].slice(0, 5);
     localStorage.setItem("recent_data_numbers", JSON.stringify(updatedNumbers));
 
-    // Format: *182*8*2*1# for data bundles
-    const ussdCode = `tel:*182*8*2*1%23`;
+    let ussdCode = "";
+    if (plan.id === "5") {
+      ussdCode = `tel:*182*2*1*2*2*${phoneNumber}*2*1%23`;
+    } else {
+      ussdCode = `tel:*182*8*2*1%23`;
+    }
+    
     window.location.href = ussdCode;
 
-    // Save to transactions history
     const transaction = {
       phoneNumber,
       amount: `RWF ${plan.price}`,
