@@ -160,7 +160,7 @@ const BuyDataView = ({
           </div>
 
           <Tabs defaultValue="hot" className="w-full" onValueChange={setSelectedTab}>
-            <div className="overflow-x-auto pb-2 scrollbar-hide">
+            <div className="overflow-x-auto pb-2">
               <TabsList className="w-full min-w-max grid grid-cols-4 gap-2 bg-transparent h-auto p-0">
                 <TabsTrigger 
                   value="hot" 
