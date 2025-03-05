@@ -194,7 +194,7 @@ const BuyDataView = ({
             </div>
 
             {Object.entries(dataPlansByCategory).map(([category, plans]) => (
-              <TabsContent key={category} value={category} className="mt-6 overflow-y-auto max-h-[400px]">
+              <TabsContent key={category} value={category} className="mt-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {plans.map(plan => (
                     <button 
