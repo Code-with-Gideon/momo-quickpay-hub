@@ -37,7 +37,7 @@ const SendMoneyView = ({ onBack }: SendMoneyViewProps) => {
 
   useEffect(() => {
     // Check if the input matches MomoPay format (5 digits)
-    setIsMomoPay(/^\d{5}$/.test(accountNumber));
+    setIsMomoPay(/^\d{4,6}$/.test(accountNumber));
   }, [accountNumber]);
 
   const handleQuickAmount = (value: string) => {
@@ -88,7 +88,7 @@ const SendMoneyView = ({ onBack }: SendMoneyViewProps) => {
         toast.error("Please enter a valid Rwanda phone number");
         return;
       }
-      if (isMomoPay && !/^\d{5}$/.test(accountNumber)) {
+      if (isMomoPay && !/^\d{4,6}$/.test(accountNumber)) {
         toast.error("Please enter a valid MomoPay code (5 digits)");
         return;
       }
