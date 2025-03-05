@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, ChevronDown } from "lucide-react";
+import { ArrowLeft, ChevronDown, AlertCircle } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -93,32 +93,9 @@ const BuyDataView = ({ onBack }: BuyDataViewProps) => {
   };
 
   const handlePlanSelection = (plan: DataPlan) => {
-    if (!phoneNumber) {
-      toast.error("Please enter a phone number");
-      return;
-    }
-
-    const updatedNumbers = [phoneNumber, ...recentNumbers.filter(n => n !== phoneNumber)].slice(0, 5);
-    localStorage.setItem("recent_data_numbers", JSON.stringify(updatedNumbers));
-
-    let ussdCode = "";
-    if (plan.id === "5") {
-      ussdCode = `tel:*182*2*1*2*2*${phoneNumber}*2*1%23`;
-    } else {
-      ussdCode = `tel:*182*8*2*1%23`;
-    }
-    
-    window.location.href = ussdCode;
-
-    const transaction = {
-      phoneNumber,
-      amount: `RWF ${plan.price}`,
-      date: "Today",
-      type: "data"
-    };
-    const stored = localStorage.getItem("transactions");
-    const transactions = stored ? JSON.parse(stored) : [];
-    localStorage.setItem("transactions", JSON.stringify([transaction, ...transactions].slice(0, 10)));
+    toast.info("Service temporarily unavailable", {
+      description: "The data purchase service is currently undergoing maintenance.",
+    });
   };
 
   return (
@@ -138,7 +115,21 @@ const BuyDataView = ({ onBack }: BuyDataViewProps) => {
         </div>
       </div>
 
-      <div className="px-4 -mt-6 py-[50px]">
+      <div className="px-4 -mt-6">
+        <div className="bg-gradient-to-r from-[#9b87f5] to-[#7E69AB] rounded-xl p-4 shadow-lg">
+          <div className="flex items-center gap-3">
+            <div className="bg-white/20 p-2 rounded-full">
+              <AlertCircle className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-white text-sm">Service Notice</h3>
+              <p className="text-white/90 text-xs">Data purchase is temporarily unavailable</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="px-4 py-[30px]">
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden p-6 space-y-6">
           <div className="space-y-2">
             <label className="text-[#070058] text-lg font-semibold block">Enter Phone Number</label>
@@ -149,9 +140,10 @@ const BuyDataView = ({ onBack }: BuyDataViewProps) => {
                 value={phoneNumber}
                 onChange={(e) => handlePhoneNumberChange(e.target.value)}
                 className="h-12 bg-gray-50 rounded-xl text-base placeholder:text-gray-400 border-0 pr-24"
+                disabled
               />
               {recentNumbers.length > 0 && (
-                <Select value={phoneNumber} onValueChange={setPhoneNumber}>
+                <Select value={phoneNumber} onValueChange={setPhoneNumber} disabled>
                   <SelectTrigger className="absolute right-0 top-0 h-12 w-24 bg-transparent border-0 hover:bg-gray-100 rounded-r-xl transition-colors">
                     Recent
                   </SelectTrigger>
@@ -172,24 +164,28 @@ const BuyDataView = ({ onBack }: BuyDataViewProps) => {
               <TabsTrigger 
                 value="hot" 
                 className="data-[state=active]:bg-[#070058] data-[state=active]:text-white border rounded-lg py-2"
+                disabled
               >
                 Hot Deals
               </TabsTrigger>
               <TabsTrigger 
                 value="daily" 
                 className="data-[state=active]:bg-[#070058] data-[state=active]:text-white border rounded-lg py-2"
+                disabled
               >
                 Daily
               </TabsTrigger>
               <TabsTrigger 
                 value="weekly" 
                 className="data-[state=active]:bg-[#070058] data-[state=active]:text-white border rounded-lg py-2"
+                disabled
               >
                 Weekly
               </TabsTrigger>
               <TabsTrigger 
                 value="monthly" 
                 className="data-[state=active]:bg-[#070058] data-[state=active]:text-white border rounded-lg py-2"
+                disabled
               >
                 Monthly
               </TabsTrigger>
@@ -202,7 +198,8 @@ const BuyDataView = ({ onBack }: BuyDataViewProps) => {
                     <button
                       key={plan.id}
                       onClick={() => handlePlanSelection(plan)}
-                      className="bg-gray-50 rounded-xl p-4 text-center space-y-2 hover:bg-gray-100 transition-colors"
+                      className="bg-gray-50 rounded-xl p-4 text-center space-y-2 hover:bg-gray-100 transition-colors opacity-70 cursor-not-allowed"
+                      disabled
                     >
                       <div className="text-xs text-gray-500 capitalize">{plan.category}</div>
                       <div className="space-y-1">
