@@ -160,7 +160,7 @@ const BuyDataView = ({
           </div>
 
           <Tabs defaultValue="hot" className="w-full" onValueChange={setSelectedTab}>
-            <div className="overflow-x-auto pb-2">
+            <div className="overflow-x-auto pb-2 scrollbar-hide">
               <TabsList className="w-full min-w-max grid grid-cols-4 gap-2 bg-transparent h-auto p-0">
                 <TabsTrigger 
                   value="hot" 
@@ -194,7 +194,7 @@ const BuyDataView = ({
             </div>
 
             {Object.entries(dataPlansByCategory).map(([category, plans]) => (
-              <TabsContent key={category} value={category} className="mt-6">
+              <TabsContent key={category} value={category} className="mt-6 overflow-y-auto max-h-[400px]">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {plans.map(plan => (
                     <button 
