@@ -125,17 +125,17 @@ const BuyDataView = ({
           </div>
 
           <Tabs defaultValue="hot" className="w-full" onValueChange={setSelectedTab}>
-            <TabsList className="w-full grid grid-cols-4 gap-4 bg-transparent h-auto p-0">
-              <TabsTrigger value="hot" className="data-[state=active]:bg-[#070058] data-[state=active]:text-white border rounded-lg py-2" disabled>
+            <TabsList className="w-full grid grid-cols-4 gap-4 bg-transparent h-auto p-0 mx-0">
+              <TabsTrigger value="hot" disabled className="data-[state=active]:bg-[#070058] data-[state=active]:text-white border rounded-lg py-2 px-[40px]">
                 Hot Deals
               </TabsTrigger>
-              <TabsTrigger value="daily" className="data-[state=active]:bg-[#070058] data-[state=active]:text-white border rounded-lg py-2" disabled>
+              <TabsTrigger value="daily" disabled className="data-[state=active]:bg-[#070058] data-[state=active]:text-white border rounded-lg py-2 px-[40px] mx-[12px]">
                 Daily
               </TabsTrigger>
-              <TabsTrigger value="weekly" className="data-[state=active]:bg-[#070058] data-[state=active]:text-white border rounded-lg py-2" disabled>
+              <TabsTrigger value="weekly" disabled className="data-[state=active]:bg-[#070058] data-[state=active]:text-white border rounded-lg py-2 px-[40px] mx-[21px]">
                 Weekly
               </TabsTrigger>
-              <TabsTrigger value="monthly" className="data-[state=active]:bg-[#070058] data-[state=active]:text-white border rounded-lg py-2" disabled>
+              <TabsTrigger value="monthly" disabled className="data-[state=active]:bg-[#070058] data-[state=active]:text-white border rounded-lg py-2 px-[43px] mx-[34px]">
                 Monthly
               </TabsTrigger>
             </TabsList>
