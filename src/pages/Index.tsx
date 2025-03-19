@@ -12,12 +12,17 @@ import BuyAirtimeView from "@/components/BuyAirtimeView";
 import BuyDataView from "@/components/BuyDataView";
 import FeedbackForm from "@/components/FeedbackForm";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
+import { Link, useNavigate } from "react-router-dom";
+import UserMenu from "@/components/UserMenu";
 
 type Screen = "home" | "qr" | "number" | "momopay" | "generate" | "send" | "airtime" | "data";
 
 const Index = () => {
   const [currentScreen, setCurrentScreen] = useState<Screen>("home");
   const [mode, setMode] = useState<"send" | "receive" | null>(null);
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
   const handleQRScanSuccess = (decodedText: string) => {
     try {
@@ -45,6 +50,11 @@ const Index = () => {
     }
     if (currentScreen === "home" && !mode) {
       return <div className="space-y-6 px-4 py-6">
+          <div className="flex justify-between items-center mb-2">
+            <h1 className="text-xl font-bold text-[#070058]">MoMo Quickpay</h1>
+            <UserMenu />
+          </div>
+
           <div className="rounded-[20px] overflow-hidden h-[180px] relative shadow-lg">
             <img src="/lovable-uploads/0af956c5-c425-481b-a902-d2974b9a9e0b.png" alt="Banner Background" className="w-full h-full object-cover" />
             <div className="absolute inset-0 bg-[#070058]/70 flex flex-col justify-center items-center text-center px-6">
@@ -52,6 +62,18 @@ const Index = () => {
               <p className="text-[13px] text-white/90 max-w-[240px]">A simple interface to navigate through MOMO</p>
             </div>
           </div>
+
+          {user && (
+            <div className="text-center mb-4">
+              <Button 
+                onClick={() => navigate("/dashboard")} 
+                variant="outline" 
+                className="border-[#070058] text-[#070058]"
+              >
+                View Transaction Dashboard
+              </Button>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             <Button onClick={() => setCurrentScreen("send")} className="h-[72px] bg-[#070058] hover:bg-[#070058]/90 text-white flex flex-col items-center justify-center gap-2 rounded-xl shadow-md transition-all duration-200 hover:scale-[1.02] text-center">

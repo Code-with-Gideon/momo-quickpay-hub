@@ -1,6 +1,8 @@
 
 import { useState, useEffect } from 'react';
 import { Transaction, transactionService } from '../utils/transactionService';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface UseTransactionsOptions {
   userId?: string;
@@ -12,32 +14,95 @@ interface UseTransactionsOptions {
 export function useTransactions(options: UseTransactionsOptions = {}) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { user } = useAuth();
 
   useEffect(() => {
-    const fetchTransactions = () => {
+    const fetchTransactions = async () => {
       setIsLoading(true);
       let result: Transaction[] = [];
 
       try {
-        if (options.userId) {
-          // Get transactions for specific user
-          result = transactionService.getUserTransactions(options.userId);
-        } else if (options.type) {
-          // Get transactions by type
-          result = transactionService.getTransactionsByType(options.type);
-        } else if (options.recentDays) {
-          // Get recent transactions
-          result = transactionService.getRecentTransactions(options.recentDays);
+        // If user is authenticated, fetch from Supabase
+        if (user) {
+          let query = supabase.from('transactions').select('*');
+          
+          if (options.userId) {
+            query = query.eq('user_id', options.userId);
+          }
+          
+          if (options.type) {
+            query = query.eq('transaction_type', options.type);
+          }
+          
+          if (options.recentDays) {
+            const cutoffDate = new Date();
+            cutoffDate.setDate(cutoffDate.getDate() - options.recentDays);
+            query = query.gte('created_at', cutoffDate.toISOString());
+          }
+          
+          query = query.order('created_at', { ascending: false });
+          
+          const { data, error } = await query;
+          
+          if (error) {
+            console.error('Error fetching transactions from Supabase:', error);
+            // Fallback to local storage if Supabase fails
+            result = fetchFromLocalStorage();
+          } else {
+            // Convert Supabase format to local format
+            result = (data || []).map((t: any) => ({
+              type: t.transaction_type,
+              amount: `RWF ${t.amount}`,
+              date: formatDateToRelative(t.created_at),
+              timestamp: new Date(t.created_at).getTime(),
+              userId: t.user_id,
+              ...(t.transaction_type === 'send' ? { to: t.recipient, isMomoPay: false } : {}),
+              ...(t.transaction_type === 'airtime' ? { phoneNumber: t.recipient } : {}),
+              ...(t.transaction_type === 'data' ? { phoneNumber: t.recipient, dataPackage: t.description } : {})
+            }));
+          }
         } else {
-          // Get all transactions
-          result = transactionService.getAllTransactions();
+          // Not authenticated, use local storage
+          result = fetchFromLocalStorage();
         }
 
         setTransactions(result);
       } catch (error) {
         console.error("Error fetching transactions:", error);
+        // Fallback to local storage on any error
+        result = fetchFromLocalStorage();
+        setTransactions(result);
       } finally {
         setIsLoading(false);
+      }
+    };
+
+    // Helper function to fetch from localStorage
+    const fetchFromLocalStorage = (): Transaction[] => {
+      if (options.userId) {
+        return transactionService.getUserTransactions(options.userId);
+      } else if (options.type) {
+        return transactionService.getTransactionsByType(options.type);
+      } else if (options.recentDays) {
+        return transactionService.getRecentTransactions(options.recentDays);
+      } else {
+        return transactionService.getAllTransactions();
+      }
+    };
+
+    // Helper function to format date
+    const formatDateToRelative = (dateString: string): "Today" | "Yesterday" => {
+      const date = new Date(dateString);
+      const today = new Date();
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      
+      if (date.toDateString() === today.toDateString()) {
+        return "Today";
+      } else if (date.toDateString() === yesterday.toDateString()) {
+        return "Yesterday";
+      } else {
+        return "Today"; // Default fallback
       }
     };
 
@@ -58,31 +123,92 @@ export function useTransactions(options: UseTransactionsOptions = {}) {
     };
     window.addEventListener('storage', handleStorageChange);
 
+    // Subscription to Supabase realtime changes if user is authenticated
+    let subscription: any;
+    if (user) {
+      subscription = supabase
+        .channel('transactions')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, () => {
+          fetchTransactions();
+        })
+        .subscribe();
+    }
+
     return () => {
       if (intervalId !== null) {
         clearInterval(intervalId);
       }
       window.removeEventListener('storage', handleStorageChange);
+      if (subscription) {
+        subscription.unsubscribe();
+      }
     };
-  }, [options.userId, options.type, options.recentDays, options.refreshInterval]);
+  }, [options.userId, options.type, options.recentDays, options.refreshInterval, user]);
 
   // Additional function to add a new transaction
-  const addTransaction = (transaction: Omit<Transaction, 'timestamp' | 'userId'> & { timestamp?: number, userId?: string }) => {
+  const addTransaction = async (transaction: Omit<Transaction, 'timestamp' | 'userId'> & { timestamp?: number, userId?: string }) => {
+    // Generate a full transaction object for local storage
     const fullTransaction = {
       ...transaction,
       timestamp: transaction.timestamp || Date.now(),
-      userId: transaction.userId || 'demo-user'
+      userId: transaction.userId || user?.id || 'demo-user'
     } as Transaction;
     
-    transactionService.saveTransaction(fullTransaction);
-    setTransactions(prev => [fullTransaction, ...prev]);
-    return fullTransaction;
+    try {
+      // If user is authenticated, save to Supabase
+      if (user) {
+        // Map local transaction format to Supabase format
+        const supabaseTransaction = {
+          user_id: user.id,
+          amount: parseFloat(transaction.amount.replace(/[^0-9.]/g, "")),
+          transaction_type: transaction.type,
+          recipient: transaction.type === 'send' 
+            ? (transaction as any).to 
+            : (transaction as any).phoneNumber,
+          description: transaction.type === 'data' 
+            ? (transaction as any).dataPackage 
+            : null,
+          status: 'completed',
+          reference: `ref-${Date.now()}`
+        };
+        
+        const { error } = await supabase
+          .from('transactions')
+          .insert(supabaseTransaction);
+          
+        if (error) {
+          console.error('Error saving transaction to Supabase:', error);
+          // Fallback to local storage if Supabase fails
+          transactionService.saveTransaction(fullTransaction);
+        }
+      } else {
+        // Not authenticated, save to local storage
+        transactionService.saveTransaction(fullTransaction);
+      }
+      
+      // Update local state
+      setTransactions(prev => [fullTransaction, ...prev]);
+      return fullTransaction;
+    } catch (error) {
+      console.error('Failed to save transaction:', error);
+      // Fallback to local storage on any error
+      transactionService.saveTransaction(fullTransaction);
+      setTransactions(prev => [fullTransaction, ...prev]);
+      return fullTransaction;
+    }
   };
 
   return {
     transactions,
     isLoading,
     addTransaction,
-    refreshTransactions: () => setTransactions(transactionService.getAllTransactions()),
+    refreshTransactions: () => {
+      if (user) {
+        // Will trigger the useEffect to reload from Supabase
+        setIsLoading(true);
+      } else {
+        setTransactions(transactionService.getAllTransactions());
+      }
+    },
   };
 }
