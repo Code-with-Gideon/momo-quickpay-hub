@@ -7,6 +7,8 @@ interface Transaction {
   to: string;
   amount: string;
   date: "Today" | "Yesterday";
+  timestamp?: number;
+  userId?: string; // For future user identification
 }
 
 const getIcon = (type: Transaction["type"]) => {
@@ -40,10 +42,18 @@ const RecentTransactions = () => {
       const parsedTransactions = JSON.parse(stored);
       const formattedTransactions = parsedTransactions.map((t: any) => ({
         type: t.type || "send",
-        to: t.phoneNumber,
+        to: t.phoneNumber || t.to, // Handle both formats
         amount: t.amount,
-        date: t.date
+        date: t.date,
+        timestamp: t.timestamp || Date.now(), // Add timestamp if not already present
+        userId: t.userId || 'demo-user' // Default to demo user if not set
       }));
+      
+      // Sort by timestamp (newest first) if available
+      formattedTransactions.sort((a: Transaction, b: Transaction) => {
+        return (b.timestamp || 0) - (a.timestamp || 0);
+      });
+      
       setTransactions(formattedTransactions);
     }
   }, []);

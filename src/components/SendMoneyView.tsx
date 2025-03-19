@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { ArrowLeft, QrCode, User2, Send, Star, Store } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -17,6 +16,8 @@ interface StoredTransaction {
   type: "send" | "airtime" | "data";
   isFavorite?: boolean;
   isMomoPay?: boolean;
+  timestamp?: number;
+  userId?: string;
 }
 
 const SendMoneyView = ({ onBack }: SendMoneyViewProps) => {
@@ -66,15 +67,22 @@ const SendMoneyView = ({ onBack }: SendMoneyViewProps) => {
   };
 
   const saveTransaction = (transaction: StoredTransaction) => {
+    // Add timestamp and userId to the transaction
+    const enhancedTransaction = {
+      ...transaction,
+      timestamp: Date.now(),
+      userId: 'demo-user' // In a real app, this would be the authenticated user's ID
+    };
+    
     const stored = localStorage.getItem("send_money_history");
     const transactions = stored ? JSON.parse(stored) : [];
-    const newTransactions = [transaction, ...transactions].slice(0, 10);
+    const newTransactions = [enhancedTransaction, ...transactions].slice(0, 10);
     localStorage.setItem("send_money_history", JSON.stringify(newTransactions));
     
     // Also save to general transactions for the main dashboard
     const generalStored = localStorage.getItem("transactions");
     const generalTransactions = generalStored ? JSON.parse(generalStored) : [];
-    localStorage.setItem("transactions", JSON.stringify([transaction, ...generalTransactions].slice(0, 10)));
+    localStorage.setItem("transactions", JSON.stringify([enhancedTransaction, ...generalTransactions].slice(0, 10)));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
