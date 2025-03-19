@@ -1,15 +1,7 @@
 
 import { Send, Smartphone, Signal } from "lucide-react";
-import { useEffect, useState } from "react";
-
-interface Transaction {
-  type: "send" | "airtime" | "data";
-  to: string;
-  amount: string;
-  date: "Today" | "Yesterday";
-  timestamp?: number;
-  userId?: string; // For future user identification
-}
+import { useTransactions } from "@/hooks/useTransactions";
+import { Transaction } from "@/utils/transactionService";
 
 const getIcon = (type: Transaction["type"]) => {
   switch (type) {
@@ -33,69 +25,80 @@ const getTitle = (type: Transaction["type"]) => {
   }
 };
 
-const RecentTransactions = () => {
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+// Format timestamp to "Today" or "Yesterday" or date string
+const formatDate = (timestamp: number): string => {
+  const date = new Date(timestamp);
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  
+  if (date.toDateString() === today.toDateString()) {
+    return "Today";
+  } else if (date.toDateString() === yesterday.toDateString()) {
+    return "Yesterday";
+  } else {
+    return date.toLocaleDateString("en-US", { 
+      month: "short", 
+      day: "numeric" 
+    });
+  }
+};
 
-  useEffect(() => {
-    const stored = localStorage.getItem("transactions");
-    if (stored) {
-      const parsedTransactions = JSON.parse(stored);
-      const formattedTransactions = parsedTransactions.map((t: any) => ({
-        type: t.type || "send",
-        to: t.phoneNumber || t.to, // Handle both formats
-        amount: t.amount,
-        date: t.date,
-        timestamp: t.timestamp || Date.now(), // Add timestamp if not already present
-        userId: t.userId || 'demo-user' // Default to demo user if not set
-      }));
-      
-      // Sort by timestamp (newest first) if available
-      formattedTransactions.sort((a: Transaction, b: Transaction) => {
-        return (b.timestamp || 0) - (a.timestamp || 0);
-      });
-      
-      setTransactions(formattedTransactions);
+const RecentTransactions = () => {
+  // Use our custom hook to get recent transactions (last 7 days)
+  const { transactions, isLoading } = useTransactions({ recentDays: 7 });
+
+  // Group transactions by date for display
+  const groupedTransactions = transactions.reduce((acc, transaction) => {
+    const dateKey = formatDate(transaction.timestamp);
+    if (!acc[dateKey]) {
+      acc[dateKey] = [];
     }
-  }, []);
+    acc[dateKey].push(transaction);
+    return acc;
+  }, {} as Record<string, Transaction[]>);
 
   return (
     <div className="bg-white rounded-2xl p-6 shadow-sm">
       <h2 className="text-xl font-bold text-[#070058] mb-4">Recent Transactions</h2>
-      {transactions.length === 0 ? (
+      {isLoading ? (
+        <div className="text-center py-8">
+          <p className="text-gray-500">Loading transactions...</p>
+        </div>
+      ) : transactions.length === 0 ? (
         <div className="text-center py-8 text-gray-500">
           No recent transactions
         </div>
       ) : (
         <div className="space-y-6">
-          {Object.entries(
-            transactions.reduce((acc, transaction) => {
-              if (!acc[transaction.date]) {
-                acc[transaction.date] = [];
-              }
-              acc[transaction.date].push(transaction);
-              return acc;
-            }, {} as Record<string, Transaction[]>)
-          ).map(([date, transactions]) => (
+          {Object.entries(groupedTransactions).map(([date, dayTransactions]) => (
             <div key={date}>
               <div className="flex items-center gap-2 mb-4">
                 <span className="text-gray-600">{date}</span>
                 <div className="flex-1 h-[1px] bg-gray-200" />
               </div>
               <div className="space-y-4">
-                {transactions.map((transaction, idx) => (
-                  <div key={idx} className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-[#070058] flex items-center justify-center">
-                      {getIcon(transaction.type)}
+                {dayTransactions.map((transaction, idx) => {
+                  // Determine the recipient info based on transaction type
+                  const recipient = 'to' in transaction 
+                    ? transaction.to 
+                    : transaction.phoneNumber;
+                  
+                  return (
+                    <div key={idx} className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-full bg-[#070058] flex items-center justify-center">
+                        {getIcon(transaction.type)}
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-semibold text-[#070058]">
+                          {getTitle(transaction.type)}
+                        </p>
+                        <p className="text-sm text-gray-500">To {recipient}</p>
+                      </div>
+                      <p className="font-semibold text-[#070058]">{transaction.amount}</p>
                     </div>
-                    <div className="flex-1">
-                      <p className="font-semibold text-[#070058]">
-                        {getTitle(transaction.type)}
-                      </p>
-                      <p className="text-sm text-gray-500">To {transaction.to}</p>
-                    </div>
-                    <p className="font-semibold text-[#070058]">{transaction.amount}</p>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           ))}
