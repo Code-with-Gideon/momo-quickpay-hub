@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Send, Smartphone, Signal, Filter, Download, User } from "lucide-react";
 import { useTransactions } from "@/hooks/useTransactions";
@@ -30,7 +29,6 @@ const getTitle = (type: Transaction["type"]) => {
 };
 
 const formatAmount = (amount: string) => {
-  // Remove non-numeric characters except commas and dots
   const cleanedAmount = amount.replace(/[^0-9,.]/g, "");
   return `RWF ${cleanedAmount}`;
 };
@@ -54,18 +52,15 @@ const formatDate = (timestamp: number) => {
   }
 };
 
-// Utility function to export transactions to CSV
 const exportToCSV = (transactions: Transaction[]) => {
   if (transactions.length === 0) return;
   
-  // Format transactions for CSV
   const headers = "Type,Amount,Date,To/Phone,User ID\n";
   const csvContent = transactions.map(t => {
     const recipient = 'to' in t ? t.to : t.phoneNumber;
     return `${t.type},${t.amount},${formatDate(t.timestamp)},${recipient},${t.userId}`;
   }).join("\n");
   
-  // Create and download the file
   const blob = new Blob([headers + csvContent], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
@@ -86,18 +81,27 @@ const TransactionDashboard = ({ userId, isAdmin = false }: TransactionDashboardP
   const [timeRange, setTimeRange] = useState<"7" | "30" | "90" | "all">("7");
   const [userFilter, setUserFilter] = useState(userId || "all");
   
-  // Convert timeRange to number of days for the hook
   const days = timeRange === "all" ? undefined : parseInt(timeRange);
   
-  // Use our custom hook to get transactions
   const { transactions, isLoading } = useTransactions({
     userId: userFilter !== "all" ? userFilter : undefined,
     type: filter !== "all" ? filter as Transaction["type"] : undefined,
     recentDays: days,
-    refreshInterval: 60000, // Refresh every minute
+    refreshInterval: 60000,
   });
 
-  // Group transactions by date
+  const handleFilterChange = (value: string) => {
+    setFilter(value as Transaction["type"] | "all");
+  };
+
+  const handleTimeRangeChange = (value: string) => {
+    setTimeRange(value as "7" | "30" | "90" | "all");
+  };
+
+  const handleUserFilterChange = (value: string) => {
+    setUserFilter(value);
+  };
+
   const groupedTransactions = transactions.reduce((acc, transaction) => {
     const dateKey = formatDate(transaction.timestamp);
     if (!acc[dateKey]) {
@@ -107,7 +111,6 @@ const TransactionDashboard = ({ userId, isAdmin = false }: TransactionDashboardP
     return acc;
   }, {} as Record<string, Transaction[]>);
 
-  // Calculate some basic stats
   const stats = {
     total: transactions.length,
     send: transactions.filter(t => t.type === "send").length,
@@ -124,7 +127,6 @@ const TransactionDashboard = ({ userId, isAdmin = false }: TransactionDashboardP
       <div className="bg-white rounded-2xl p-6 shadow-sm">
         <h2 className="text-xl font-bold text-[#070058] mb-4">Transaction Dashboard</h2>
         
-        {/* Stats Overview */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-gray-50 p-4 rounded-xl">
             <p className="text-gray-500 text-sm">Total Transactions</p>
@@ -144,9 +146,8 @@ const TransactionDashboard = ({ userId, isAdmin = false }: TransactionDashboardP
           </div>
         </div>
         
-        {/* Filters */}
         <div className="flex flex-wrap gap-3 mb-6">
-          <Select value={filter} onValueChange={setFilter}>
+          <Select value={filter} onValueChange={handleFilterChange}>
             <SelectTrigger className="w-[140px]">
               <SelectValue placeholder="Transaction Type" />
             </SelectTrigger>
@@ -158,7 +159,7 @@ const TransactionDashboard = ({ userId, isAdmin = false }: TransactionDashboardP
             </SelectContent>
           </Select>
           
-          <Select value={timeRange} onValueChange={setTimeRange}>
+          <Select value={timeRange} onValueChange={handleTimeRangeChange}>
             <SelectTrigger className="w-[140px]">
               <SelectValue placeholder="Time Range" />
             </SelectTrigger>
@@ -171,14 +172,13 @@ const TransactionDashboard = ({ userId, isAdmin = false }: TransactionDashboardP
           </Select>
           
           {isAdmin && (
-            <Select value={userFilter} onValueChange={setUserFilter}>
+            <Select value={userFilter} onValueChange={handleUserFilterChange}>
               <SelectTrigger className="w-[140px]">
                 <SelectValue placeholder="User" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Users</SelectItem>
                 <SelectItem value="demo-user">Demo User</SelectItem>
-                {/* In a real app, you would fetch and populate users from database */}
               </SelectContent>
             </Select>
           )}
@@ -194,7 +194,6 @@ const TransactionDashboard = ({ userId, isAdmin = false }: TransactionDashboardP
           </Button>
         </div>
 
-        {/* Transactions List */}
         <div>
           <Tabs defaultValue="list" className="w-full">
             <TabsList className="mb-4">
@@ -277,7 +276,6 @@ const TransactionDashboard = ({ userId, isAdmin = false }: TransactionDashboardP
                         .toLocaleString()}
                     </p>
                   </div>
-                  {/* In a real app, you would map through all users */}
                 </div>
               ) : (
                 <div className="text-center py-8 text-gray-500">
