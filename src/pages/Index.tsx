@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Send, Smartphone, QrCode, Signal, BarChart } from "lucide-react";
+import { Send, Smartphone, QrCode, Signal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import NumberInput from "@/components/NumberInput";
 import QRScanner from "@/components/QRScanner";
@@ -11,10 +11,9 @@ import SendMoneyView from "@/components/SendMoneyView";
 import BuyAirtimeView from "@/components/BuyAirtimeView";
 import BuyDataView from "@/components/BuyDataView";
 import FeedbackForm from "@/components/FeedbackForm";
-import TransactionDashboard from "@/components/TransactionDashboard";
 import { toast } from "sonner";
 
-type Screen = "home" | "qr" | "number" | "momopay" | "generate" | "send" | "airtime" | "data" | "transactions";
+type Screen = "home" | "qr" | "number" | "momopay" | "generate" | "send" | "airtime" | "data";
 
 const Index = () => {
   const [currentScreen, setCurrentScreen] = useState<Screen>("home");
@@ -44,25 +43,6 @@ const Index = () => {
     if (currentScreen === "data") {
       return <BuyDataView onBack={() => setCurrentScreen("home")} />;
     }
-    if (currentScreen === "transactions") {
-      return (
-        <div className="min-h-screen bg-gray-50">
-          <div className="bg-[#070058] h-[120px] relative overflow-hidden">
-            <img src="/lovable-uploads/0af956c5-c425-481b-a902-d2974b9a9e0b.png" alt="Banner Background" className="absolute inset-0 w-full h-full object-cover opacity-70" />
-            <div className="relative z-10 px-4 py-6">
-              <button onClick={() => setCurrentScreen("home")} className="text-white flex items-center gap-2 mb-3 hover:opacity-90 transition-opacity text-sm">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-arrow-left"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
-                <span>Back</span>
-              </button>
-              <h1 className="text-white font-bold text-2xl text-center">Transaction History</h1>
-            </div>
-          </div>
-          <div className="px-4 -mt-6 py-[50px]">
-            <TransactionDashboard userId="demo-user" isAdmin={true} />
-          </div>
-        </div>
-      );
-    }
     if (currentScreen === "home" && !mode) {
       return <div className="space-y-6 px-4 py-6">
           <div className="rounded-[20px] overflow-hidden h-[180px] relative shadow-lg">
@@ -91,16 +71,6 @@ const Index = () => {
               <span className="text-sm font-medium">Buy Data</span>
             </Button>
           </div>
-
-          {/* Add Transaction Dashboard Button */}
-          <Button 
-            onClick={() => setCurrentScreen("transactions")} 
-            variant="outline" 
-            className="w-full h-[52px] border-2 hover:bg-gray-50 text-[#070058] flex items-center justify-center gap-2 rounded-xl shadow-sm transition-all duration-200 hover:scale-[1.01]"
-          >
-            <BarChart className="w-5 h-5" />
-            <span className="text-sm font-medium">View Transaction History</span>
-          </Button>
 
           <RecentTransactions />
           <FeedbackForm />
