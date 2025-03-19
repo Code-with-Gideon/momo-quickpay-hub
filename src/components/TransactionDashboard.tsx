@@ -328,6 +328,11 @@ const TransactionDashboard = ({ userId }: TransactionDashboardProps) => {
                 <div className="space-y-4">
                   {/* Group transactions by user for admin view */}
                   {Array.from(new Set(transactions.map(t => t.user_id || t.userId))).map(userId => {
+                    // Type check to ensure we have an array before mapping
+                    if (!transactions || !Array.isArray(transactions)) {
+                      return null;
+                    }
+                    
                     const userTransactions = transactions.filter(t => (t.user_id || t.userId) === userId);
                     const userEmail = userTransactions[0]?.user_email || 'Unknown User';
                     const totalAmount = userTransactions.reduce((sum, t) => {

@@ -49,17 +49,47 @@ export function useTransactions(options: UseTransactionsOptions = {}) {
             // Fallback to local storage if Supabase fails
             result = fetchFromLocalStorage();
           } else {
-            // Convert Supabase format to local format
-            result = (data || []).map((t: any) => ({
-              type: t.transaction_type,
-              amount: `RWF ${t.amount}`,
-              date: formatDateToRelative(t.created_at),
-              timestamp: new Date(t.created_at).getTime(),
-              userId: t.user_id,
-              ...(t.transaction_type === 'send' ? { to: t.recipient, isMomoPay: false } : {}),
-              ...(t.transaction_type === 'airtime' ? { phoneNumber: t.recipient } : {}),
-              ...(t.transaction_type === 'data' ? { phoneNumber: t.recipient, dataPackage: t.description } : {})
-            }));
+            // Convert Supabase format to local format with proper type checking
+            result = (data || []).map((t: any): Transaction => {
+              const baseTransaction = {
+                type: t.transaction_type as Transaction['type'],
+                amount: `RWF ${t.amount}`,
+                date: formatDateToRelative(t.created_at),
+                timestamp: new Date(t.created_at).getTime(),
+                userId: t.user_id,
+              };
+              
+              // Create the correct transaction type based on transaction_type
+              if (t.transaction_type === 'send') {
+                return {
+                  ...baseTransaction,
+                  type: 'send',
+                  to: t.recipient,
+                  isMomoPay: false
+                };
+              } else if (t.transaction_type === 'airtime') {
+                return {
+                  ...baseTransaction,
+                  type: 'airtime',
+                  phoneNumber: t.recipient
+                };
+              } else if (t.transaction_type === 'data') {
+                return {
+                  ...baseTransaction, 
+                  type: 'data',
+                  phoneNumber: t.recipient,
+                  dataPackage: t.description || 'Standard Data'
+                };
+              }
+              
+              // Fallback (should never happen with proper data)
+              return {
+                ...baseTransaction,
+                type: 'send',
+                to: t.recipient || 'Unknown',
+                isMomoPay: false
+              };
+            });
           }
         } else {
           // Not authenticated, use local storage
