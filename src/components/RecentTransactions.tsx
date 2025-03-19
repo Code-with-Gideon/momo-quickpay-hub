@@ -2,6 +2,8 @@
 import { Send, Smartphone, Signal } from "lucide-react";
 import { useTransactions } from "@/hooks/useTransactions";
 import { Transaction } from "@/utils/transactionService";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
 const getIcon = (type: Transaction["type"]) => {
   switch (type) {
@@ -45,11 +47,25 @@ const formatDate = (timestamp: number): string => {
 };
 
 const RecentTransactions = () => {
+  const navigate = useNavigate();
   // Use our custom hook to get recent transactions (last 7 days)
   const { transactions, isLoading } = useTransactions({ recentDays: 7 });
 
   // Group transactions by date for display
   const groupedTransactions = transactions.reduce((acc, transaction) => {
+    const dateKey = formatDate(transaction.timestamp);
+    if (!acc[dateKey]) {
+      acc[dateKey] = [];
+    }
+    acc[dateKey].push(transaction);
+    return acc;
+  }, {} as Record<string, Transaction[]>);
+
+  // Get only the last 5 transactions for the preview
+  const recentFiveTransactions = transactions.slice(0, 5);
+
+  // Group the recent 5 transactions by date
+  const recentGroupedTransactions = recentFiveTransactions.reduce((acc, transaction) => {
     const dateKey = formatDate(transaction.timestamp);
     if (!acc[dateKey]) {
       acc[dateKey] = [];
@@ -65,13 +81,13 @@ const RecentTransactions = () => {
         <div className="text-center py-8">
           <p className="text-gray-500">Loading transactions...</p>
         </div>
-      ) : transactions.length === 0 ? (
+      ) : recentFiveTransactions.length === 0 ? (
         <div className="text-center py-8 text-gray-500">
           No recent transactions
         </div>
       ) : (
         <div className="space-y-6">
-          {Object.entries(groupedTransactions).map(([date, dayTransactions]) => (
+          {Object.entries(recentGroupedTransactions).map(([date, dayTransactions]) => (
             <div key={date}>
               <div className="flex items-center gap-2 mb-4">
                 <span className="text-gray-600">{date}</span>
@@ -102,6 +118,16 @@ const RecentTransactions = () => {
               </div>
             </div>
           ))}
+
+          <div className="text-center mt-6">
+            <Button 
+              onClick={() => navigate("/dashboard")} 
+              variant="outline" 
+              className="border-[#070058] text-[#070058]"
+            >
+              View Transaction Dashboard
+            </Button>
+          </div>
         </div>
       )}
     </div>

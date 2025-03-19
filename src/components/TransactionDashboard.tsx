@@ -194,26 +194,7 @@ const TransactionDashboard = ({ userId }: TransactionDashboardProps) => {
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-2xl p-6 shadow-sm">
-        <h2 className="text-xl font-bold text-[#070058] mb-4">Transaction Dashboard</h2>
-        
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-gray-50 p-4 rounded-xl">
-            <p className="text-gray-500 text-sm">Total Transactions</p>
-            <p className="text-2xl font-bold text-[#070058]">{stats.total}</p>
-          </div>
-          <div className="bg-gray-50 p-4 rounded-xl">
-            <p className="text-gray-500 text-sm">Send Money</p>
-            <p className="text-2xl font-bold text-[#070058]">{stats.send}</p>
-          </div>
-          <div className="bg-gray-50 p-4 rounded-xl">
-            <p className="text-gray-500 text-sm">Buy Airtime</p>
-            <p className="text-2xl font-bold text-[#070058]">{stats.airtime}</p>
-          </div>
-          <div className="bg-gray-50 p-4 rounded-xl">
-            <p className="text-gray-500 text-sm">Buy Data</p>
-            <p className="text-2xl font-bold text-[#070058]">{stats.data}</p>
-          </div>
-        </div>
+        <h2 className="text-xl font-bold text-[#070058] mb-4">Transaction History</h2>
         
         <div className="flex flex-wrap gap-3 mb-6">
           <Select value={filter} onValueChange={handleFilterChange}>
@@ -267,7 +248,7 @@ const TransactionDashboard = ({ userId }: TransactionDashboardProps) => {
           <Tabs defaultValue="list" className="w-full">
             <TabsList className="mb-4">
               <TabsTrigger value="list">List View</TabsTrigger>
-              <TabsTrigger value="users">User Summary</TabsTrigger>
+              {isAdmin && <TabsTrigger value="users">User Summary</TabsTrigger>}
             </TabsList>
             
             <TabsContent value="list">
@@ -313,6 +294,14 @@ const TransactionDashboard = ({ userId }: TransactionDashboardProps) => {
                                 </p>
                               </div>
                               <p className="font-semibold text-[#070058]">{formatAmount(transaction.amount)}</p>
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="ml-2"
+                                onClick={() => window.open(`/receipt/${transaction.id || idx}`, '_blank')}
+                              >
+                                Receipt
+                              </Button>
                             </div>
                           );
                         })}

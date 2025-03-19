@@ -7,47 +7,115 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { z } from "zod";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+
+const signUpSchema = z.object({
+  displayName: z.string().min(2, "Display name must be at least 2 characters"),
+  phoneNumber: z.string().min(10, "Phone number must be at least 10 digits"),
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  confirmPassword: z.string()
+}).refine(data => data.password === data.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"]
+});
+
+const signInSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(1, "Password is required")
+});
+
+type SignUpFormValues = z.infer<typeof signUpSchema>;
+type SignInFormValues = z.infer<typeof signInSchema>;
 
 const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  const handleAuth = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const signUpForm = useForm<SignUpFormValues>({
+    resolver: zodResolver(signUpSchema),
+    defaultValues: {
+      displayName: "",
+      phoneNumber: "",
+      email: "",
+      password: "",
+      confirmPassword: ""
+    }
+  });
+
+  const signInForm = useForm<SignInFormValues>({
+    resolver: zodResolver(signInSchema),
+    defaultValues: {
+      email: "",
+      password: ""
+    }
+  });
+
+  const handleSignUp = async (values: SignUpFormValues) => {
     setIsLoading(true);
     setError(null);
 
     try {
-      if (isSignUp) {
-        // Sign up
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
+      // Sign up with email and password
+      const { error: signUpError, data } = await supabase.auth.signUp({
+        email: values.email,
+        password: values.password,
+        options: {
+          data: {
+            display_name: values.displayName,
+            phone_number: values.phoneNumber
+          }
+        }
+      });
+      
+      if (signUpError) throw signUpError;
+      
+      // Create a profile entry (will also be handled by database triggers)
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert({
+          id: data.user?.id,
+          display_name: values.displayName,
+          phone_number: values.phoneNumber,
+          email: values.email
         });
         
-        if (error) throw error;
-        
-        toast.success("Sign up successful! You can now log in.");
-        setIsSignUp(false);
-      } else {
-        // Sign in
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        
-        if (error) throw error;
-        
-        toast.success("Logged in successfully!");
-        navigate("/");
+      if (profileError && profileError.code !== '23505') { // Ignore duplicate key errors (handled by trigger)
+        console.error("Error creating profile:", profileError);
       }
+      
+      toast.success("Sign up successful! You can now log in.");
+      setIsSignUp(false);
     } catch (err: any) {
       console.error("Authentication error:", err);
-      setError(err.message || "An error occurred during authentication");
+      setError(err.message || "An error occurred during sign up");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSignIn = async (values: SignInFormValues) => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: values.email,
+        password: values.password,
+      });
+      
+      if (error) throw error;
+      
+      toast.success("Logged in successfully!");
+      navigate("/");
+    } catch (err: any) {
+      console.error("Authentication error:", err);
+      setError(err.message || "An error occurred during sign in");
     } finally {
       setIsLoading(false);
     }
@@ -72,43 +140,129 @@ const Auth = () => {
           </Alert>
         )}
 
-        <form onSubmit={handleAuth} className="space-y-5">
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input 
-              id="email" 
-              type="email" 
-              placeholder="your@email.com" 
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input 
-              id="password" 
-              type="password" 
-              placeholder="••••••••" 
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
+        {isSignUp ? (
+          <Form {...signUpForm}>
+            <form onSubmit={signUpForm.handleSubmit(handleSignUp)} className="space-y-4">
+              <FormField
+                control={signUpForm.control}
+                name="displayName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Display Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="John Doe" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={signUpForm.control}
+                name="phoneNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone Number</FormLabel>
+                    <FormControl>
+                      <Input placeholder="+250 78 123 4567" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={signUpForm.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input type="email" placeholder="you@example.com" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={signUpForm.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="••••••••" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={signUpForm.control}
+                name="confirmPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Confirm Password</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="••••••••" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-          <Button 
-            type="submit" 
-            className="w-full bg-[#070058] hover:bg-[#070058]/90"
-            disabled={isLoading}
-          >
-            {isLoading 
-              ? "Processing..." 
-              : isSignUp 
-                ? "Create Account" 
-                : "Sign In"
-            }
-          </Button>
-        </form>
+              <Button 
+                type="submit" 
+                className="w-full bg-[#070058] hover:bg-[#070058]/90"
+                disabled={isLoading}
+              >
+                {isLoading ? "Processing..." : "Create Account"}
+              </Button>
+            </form>
+          </Form>
+        ) : (
+          <Form {...signInForm}>
+            <form onSubmit={signInForm.handleSubmit(handleSignIn)} className="space-y-4">
+              <FormField
+                control={signInForm.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input type="email" placeholder="you@example.com" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={signInForm.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="••••••••" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <Button 
+                type="submit" 
+                className="w-full bg-[#070058] hover:bg-[#070058]/90"
+                disabled={isLoading}
+              >
+                {isLoading ? "Processing..." : "Sign In"}
+              </Button>
+            </form>
+          </Form>
+        )}
 
         <div className="mt-6 text-center">
           <button 
