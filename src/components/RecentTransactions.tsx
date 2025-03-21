@@ -1,9 +1,14 @@
 
 import { Send, Smartphone, Signal } from "lucide-react";
-import { useTransactions } from "@/hooks/useTransactions";
 import { Transaction } from "@/utils/transactionService";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+
+// Define component props interface
+interface RecentTransactionsProps {
+  transactions: Transaction[];
+  isLoading: boolean;
+}
 
 const getIcon = (type: Transaction["type"]) => {
   switch (type) {
@@ -46,10 +51,8 @@ const formatDate = (timestamp: number): string => {
   }
 };
 
-const RecentTransactions = () => {
+const RecentTransactions = ({ transactions, isLoading }: RecentTransactionsProps) => {
   const navigate = useNavigate();
-  // Use our custom hook to get recent transactions (last 7 days)
-  const { transactions, isLoading } = useTransactions({ recentDays: 7 });
 
   // Group transactions by date for display
   const groupedTransactions = transactions.reduce((acc, transaction) => {
