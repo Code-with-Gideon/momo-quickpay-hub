@@ -86,6 +86,23 @@ export type Database = {
       }
     }
     Views: {
+      admin_transaction_view: {
+        Row: {
+          amount: number | null
+          created_at: string | null
+          description: string | null
+          display_name: string | null
+          email: string | null
+          id: string | null
+          phone_number: string | null
+          recipient: string | null
+          reference: string | null
+          status: string | null
+          transaction_type: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
       all_transactions: {
         Row: {
           amount: number | null
@@ -103,7 +120,10 @@ export type Database = {
       }
     }
     Functions: {
-      [_ in never]: never
+      is_superadmin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

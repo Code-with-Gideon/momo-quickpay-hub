@@ -35,6 +35,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setUser(data.session?.user || null);
       checkAdminStatus(data.session?.user?.email || "");
       setIsLoading(false);
+      
+      // Also fetch profile data if user is authenticated
+      if (data.session?.user) {
+        fetchProfileData(data.session.user.id);
+      }
     };
 
     fetchSession();
@@ -45,6 +50,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setUser(newSession?.user || null);
       checkAdminStatus(newSession?.user?.email || "");
       setIsLoading(false);
+
+      // Also fetch profile data if user is authenticated
+      if (newSession?.user) {
+        fetchProfileData(newSession.user.id);
+      }
     });
 
     return () => {
@@ -55,6 +65,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   // For demo purposes, check if email contains "admin" to grant admin privileges
   const checkAdminStatus = (email: string) => {
     setIsAdmin(email.includes("admin"));
+  };
+
+  // Fetch profile data to ensure it exists
+  const fetchProfileData = async (userId: string) => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+    
+    if (error) {
+      console.error('Error fetching profile:', error);
+    } else {
+      console.log('Profile data fetched:', data);
+    }
   };
 
   const signOut = async () => {

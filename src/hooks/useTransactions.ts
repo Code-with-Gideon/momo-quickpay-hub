@@ -14,7 +14,7 @@ interface UseTransactionsOptions {
 export function useTransactions(options: UseTransactionsOptions = {}) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
 
   useEffect(() => {
     const fetchTransactions = async () => {
@@ -24,10 +24,22 @@ export function useTransactions(options: UseTransactionsOptions = {}) {
       try {
         // If user is authenticated, fetch from Supabase
         if (user) {
-          let query = supabase.from('transactions').select('*');
+          let query;
           
-          if (options.userId) {
-            query = query.eq('user_id', options.userId);
+          // If user is admin and no specific userId was requested, fetch all transactions
+          if (isAdmin && !options.userId) {
+            // Admins get access to all transactions
+            query = supabase.from('admin_transaction_view').select('*');
+          } else {
+            // Regular users or when specific user's transactions are requested
+            query = supabase.from('transactions').select('*');
+            
+            if (options.userId) {
+              query = query.eq('user_id', options.userId);
+            } else if (user && !isAdmin) {
+              // Non-admin users only see their own transactions
+              query = query.eq('user_id', user.id);
+            }
           }
           
           if (options.type) {
@@ -49,6 +61,7 @@ export function useTransactions(options: UseTransactionsOptions = {}) {
             // Fallback to local storage if Supabase fails
             result = fetchFromLocalStorage();
           } else {
+            console.log('Fetched transactions:', data);
             // Convert Supabase format to local format with proper type checking
             result = (data || []).map((t: any): Transaction => {
               const baseTransaction = {
@@ -173,7 +186,7 @@ export function useTransactions(options: UseTransactionsOptions = {}) {
         subscription.unsubscribe();
       }
     };
-  }, [options.userId, options.type, options.recentDays, options.refreshInterval, user]);
+  }, [options.userId, options.type, options.recentDays, options.refreshInterval, user, isAdmin]);
 
   // Function to add a new transaction
   const addTransaction = async (transaction: Omit<Transaction, 'timestamp' | 'userId'> & { timestamp?: number, userId?: string }) => {
@@ -187,6 +200,8 @@ export function useTransactions(options: UseTransactionsOptions = {}) {
     try {
       // If user is authenticated, save to Supabase
       if (user) {
+        console.log('Saving transaction to Supabase:', fullTransaction);
+        
         // Map local transaction format to Supabase format
         const supabaseTransaction = {
           user_id: user.id,
@@ -202,14 +217,20 @@ export function useTransactions(options: UseTransactionsOptions = {}) {
           reference: `ref-${Date.now()}`
         };
         
-        const { error } = await supabase
+        console.log('Supabase transaction data:', supabaseTransaction);
+        
+        const { error, data } = await supabase
           .from('transactions')
-          .insert(supabaseTransaction);
+          .insert(supabaseTransaction)
+          .select()
+          .single();
           
         if (error) {
           console.error('Error saving transaction to Supabase:', error);
           // Fallback to local storage if Supabase fails
           transactionService.saveTransaction(fullTransaction);
+        } else {
+          console.log('Transaction saved successfully:', data);
         }
       } else {
         // Not authenticated, save to local storage
@@ -233,12 +254,8 @@ export function useTransactions(options: UseTransactionsOptions = {}) {
     isLoading,
     addTransaction,
     refreshTransactions: () => {
-      if (user) {
-        // Will trigger the useEffect to reload from Supabase
-        setIsLoading(true);
-      } else {
-        setTransactions(transactionService.getAllTransactions());
-      }
+      // Will trigger the useEffect to reload from Supabase or localStorage
+      setIsLoading(true);
     },
   };
 }
