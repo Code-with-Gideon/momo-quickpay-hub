@@ -1,23 +1,32 @@
-
 import { useEffect, useRef, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useLocation, useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Download, Printer, Share2 } from "lucide-react";
+import { Download, Printer, Share2, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
 const TransactionReceipt = () => {
   const { id } = useParams<{ id: string }>();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [transaction, setTransaction] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const receiptRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (id) {
+    if (location.state?.transaction) {
+      setTransaction(location.state.transaction);
+      setIsLoading(false);
+      
+      if (location.state.isNew) {
+        const transactionData = btoa(JSON.stringify(location.state.transaction));
+        navigate(`/receipt/${transactionData}`, { replace: true, state: null });
+      }
+    } 
+    else if (id) {
       try {
-        // Decode the transaction data from the URL
         const decodedData = JSON.parse(atob(id));
         setTransaction(decodedData);
       } catch (error) {
@@ -27,7 +36,7 @@ const TransactionReceipt = () => {
         setIsLoading(false);
       }
     }
-  }, [id]);
+  }, [id, location.state, navigate]);
 
   const handlePrint = () => {
     window.print();
@@ -88,6 +97,10 @@ const TransactionReceipt = () => {
     }
   };
 
+  const handleBack = () => {
+    navigate('/dashboard');
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -105,7 +118,7 @@ const TransactionReceipt = () => {
           <Button 
             className="mt-4" 
             variant="outline"
-            onClick={() => window.history.back()}
+            onClick={handleBack}
           >
             Go Back
           </Button>
@@ -114,7 +127,6 @@ const TransactionReceipt = () => {
     );
   }
 
-  // Format transaction type for display
   const formatTransactionType = (type: string) => {
     switch (type) {
       case 'send':
@@ -128,17 +140,31 @@ const TransactionReceipt = () => {
     }
   };
 
-  // Format date for display
   const formatDate = (dateString: string, timestamp: number) => {
     const date = new Date(timestamp);
     return `${dateString} - ${date.toLocaleTimeString()}`;
+  };
+
+  const getRecipientDisplay = () => {
+    switch (transaction.type) {
+      case 'send':
+        return transaction.to || transaction.recipient;
+      case 'airtime':
+      case 'data':
+        return transaction.phoneNumber || transaction.recipient;
+      default:
+        return transaction.recipient || 'Unknown';
+    }
   };
 
   return (
     <div className="min-h-screen bg-gray-50 p-6 flex flex-col items-center">
       <div className="w-full max-w-md">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-[#070058]">Transaction Receipt</h1>
+          <Button variant="outline" onClick={handleBack} className="flex items-center">
+            <ArrowLeft size={16} className="mr-2" />
+            Back to Dashboard
+          </Button>
           <div className="flex gap-2">
             <Button 
               size="icon" 
@@ -165,7 +191,6 @@ const TransactionReceipt = () => {
               ref={receiptRef} 
               className="bg-white p-6 rounded-lg"
             >
-              {/* Header */}
               <div className="flex justify-center mb-6">
                 <img 
                   src="/lovable-uploads/0af956c5-c425-481b-a902-d2974b9a9e0b.png" 
@@ -193,7 +218,7 @@ const TransactionReceipt = () => {
                   
                   <div className="flex justify-between">
                     <span className="text-gray-500">Recipient:</span>
-                    <span className="font-medium">{transaction.recipient}</span>
+                    <span className="font-medium">{getRecipientDisplay()}</span>
                   </div>
                   
                   <div className="flex justify-between">

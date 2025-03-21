@@ -13,7 +13,7 @@ import BuyDataView from "@/components/BuyDataView";
 import FeedbackForm from "@/components/FeedbackForm";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import UserMenu from "@/components/UserMenu";
 import { useTransactions } from "@/hooks/useTransactions";
 
@@ -22,9 +22,23 @@ type Screen = "home" | "qr" | "number" | "momopay" | "generate" | "send" | "airt
 const Index = () => {
   const [currentScreen, setCurrentScreen] = useState<Screen>("home");
   const [mode, setMode] = useState<"send" | "receive" | null>(null);
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
+  const navigate = useNavigate();
   // Use our custom hook to get recent transactions (last 7 days)
-  const { transactions, isLoading } = useTransactions({ recentDays: 7 });
+  const { transactions, isLoading, addTransaction } = useTransactions({ recentDays: 7 });
+
+  const handleTransactionComplete = async (transaction: any) => {
+    console.log("Transaction completed:", transaction);
+    const savedTransaction = await addTransaction(transaction);
+    
+    // Navigate to receipt page and pass transaction data
+    navigate("/receipt", { 
+      state: { 
+        transaction: savedTransaction,
+        isNew: true 
+      } 
+    });
+  };
 
   const handleQRScanSuccess = (decodedText: string) => {
     try {
@@ -42,19 +56,39 @@ const Index = () => {
 
   const renderContent = () => {
     if (currentScreen === "send") {
-      return <SendMoneyView onBack={() => setCurrentScreen("home")} />;
+      return <SendMoneyView 
+        onBack={() => setCurrentScreen("home")} 
+        onTransactionComplete={handleTransactionComplete}
+      />;
     }
     if (currentScreen === "airtime") {
-      return <BuyAirtimeView onBack={() => setCurrentScreen("home")} />;
+      return <BuyAirtimeView 
+        onBack={() => setCurrentScreen("home")} 
+        onTransactionComplete={handleTransactionComplete}
+      />;
     }
     if (currentScreen === "data") {
-      return <BuyDataView onBack={() => setCurrentScreen("home")} />;
+      return <BuyDataView 
+        onBack={() => setCurrentScreen("home")} 
+        onTransactionComplete={handleTransactionComplete}
+      />;
     }
     if (currentScreen === "home" && !mode) {
       return <div className="space-y-6 px-4 py-6">
           <div className="flex justify-between items-center mb-2">
             <h1 className="text-xl font-bold text-[#070058]">MoMo Quickpay</h1>
-            <UserMenu />
+            <div className="flex items-center gap-2">
+              {isAdmin && (
+                <Button 
+                  variant="outline"
+                  className="text-blue-600 border-blue-600 hover:bg-blue-50"
+                  onClick={() => navigate('/admin-dashboard')}
+                >
+                  Admin Dashboard
+                </Button>
+              )}
+              <UserMenu />
+            </div>
           </div>
 
           <div className="rounded-[20px] overflow-hidden h-[180px] relative shadow-lg">

@@ -52,9 +52,9 @@ const TransactionDashboard = ({ userId, isAdmin }: TransactionDashboardProps) =>
   };
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle className="text-xl font-semibold">
+    <Card className="w-full shadow-md">
+      <CardHeader className="bg-[#070058]/5 pb-2">
+        <CardTitle className="text-xl font-semibold text-[#070058]">
           {activeView === "recent" ? (
             "Transaction Dashboard"
           ) : (
@@ -75,7 +75,7 @@ const TransactionDashboard = ({ userId, isAdmin }: TransactionDashboardProps) =>
         </CardTitle>
       </CardHeader>
 
-      <CardContent>
+      <CardContent className="p-4">
         {activeView === "recent" ? (
           <>
             <Tabs defaultValue="transactions" className="mb-6">
@@ -87,7 +87,7 @@ const TransactionDashboard = ({ userId, isAdmin }: TransactionDashboardProps) =>
 
               <TabsContent value="transactions">
                 <RecentTransactions 
-                  transactions={transactions as Transaction[]}
+                  transactions={transactions}
                   isLoading={isLoading}
                 />
               </TabsContent>
