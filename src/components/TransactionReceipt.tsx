@@ -1,251 +1,242 @@
 
-import { useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Send, Smartphone, Signal, Download, ArrowLeft, Printer } from "lucide-react";
-import { Transaction } from "@/utils/transactionService";
-import { useTransactions } from "@/hooks/useTransactions";
-import { useNavigate } from "react-router-dom";
+import { Card, CardContent } from "@/components/ui/card";
+import { Download, Printer, Share2 } from "lucide-react";
+import { toast } from "sonner";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
-const getIcon = (type: Transaction["type"] | string) => {
-  switch (type) {
-    case "send":
-      return <Send className="w-6 h-6 text-white" />;
-    case "airtime":
-      return <Smartphone className="w-6 h-6 text-white" />;
-    case "data":
-      return <Signal className="w-6 h-6 text-white" />;
-    default:
-      return <Send className="w-6 h-6 text-white" />;
-  }
-};
-
-const getTitle = (type: Transaction["type"] | string) => {
-  switch (type) {
-    case "send":
-      return "Send Money";
-    case "airtime":
-      return "Buy Airtime";
-    case "data":
-      return "Buy Data";
-    default:
-      return "Transaction";
-  }
-};
-
-const getFormattedDate = (timestamp: number | string) => {
-  const date = new Date(timestamp);
-  return date.toLocaleString('en-US', { 
-    weekday: 'long', 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
-};
-
 const TransactionReceipt = () => {
   const { id } = useParams<{ id: string }>();
-  const { transactions } = useTransactions();
-  const navigate = useNavigate();
+  const [transaction, setTransaction] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const receiptRef = useRef<HTMLDivElement>(null);
-  const [isGenerating, setIsGenerating] = useState(false);
-  
-  // Find the transaction by ID
-  const transaction = transactions.find(t => 
-    (t as any).id === id || // Supabase ID
-    ((t as any).reference === id) || // Reference
-    ((t as any).timestamp?.toString() === id) // Timestamp as string
-  );
+
+  useEffect(() => {
+    if (id) {
+      try {
+        // Decode the transaction data from the URL
+        const decodedData = JSON.parse(atob(id));
+        setTransaction(decodedData);
+      } catch (error) {
+        console.error("Error decoding transaction:", error);
+        toast.error("Invalid transaction data");
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  }, [id]);
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const handleDownloadPDF = () => {
+    if (!receiptRef.current) return;
+
+    html2canvas(receiptRef.current).then(canvas => {
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const imgWidth = 210;
+      const imgHeight = canvas.height * imgWidth / canvas.width;
+      
+      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+      pdf.save('transaction-receipt.pdf');
+      
+      toast.success("Receipt downloaded as PDF");
+    });
+  };
+
+  const handleDownloadPNG = () => {
+    if (!receiptRef.current) return;
+
+    html2canvas(receiptRef.current).then(canvas => {
+      const link = document.createElement('a');
+      link.download = 'transaction-receipt.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      
+      toast.success("Receipt downloaded as PNG");
+    });
+  };
+
+  const handleShare = async () => {
+    if (!receiptRef.current) return;
+
+    try {
+      html2canvas(receiptRef.current).then(async canvas => {
+        canvas.toBlob(async blob => {
+          if (!blob) return;
+          
+          if (navigator.share) {
+            const file = new File([blob], 'transaction-receipt.png', { type: 'image/png' });
+            await navigator.share({
+              title: 'Transaction Receipt',
+              text: 'Here is my transaction receipt from Momo Quickpay',
+              files: [file]
+            });
+          } else {
+            toast.error("Sharing is not supported on this browser");
+          }
+        });
+      });
+    } catch (error) {
+      console.error("Error sharing:", error);
+      toast.error("Failed to share receipt");
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#070058]"></div>
+      </div>
+    );
+  }
 
   if (!transaction) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="max-w-md w-full bg-white p-8 rounded-2xl shadow-md">
-          <h1 className="text-xl font-bold text-[#070058] mb-4">Transaction Not Found</h1>
-          <p className="mb-6 text-gray-600">The transaction receipt you're looking for could not be found.</p>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-red-600">Invalid Receipt</h1>
+          <p className="mt-2 text-gray-600">The receipt data is invalid or has expired.</p>
           <Button 
-            onClick={() => navigate(-1)} 
-            className="w-full bg-[#070058]"
+            className="mt-4" 
+            variant="outline"
+            onClick={() => window.history.back()}
           >
-            <ArrowLeft className="mr-2 h-4 w-4" /> Go Back
+            Go Back
           </Button>
         </div>
       </div>
     );
   }
 
-  const generatePDF = async () => {
-    if (!receiptRef.current) return;
-    
-    setIsGenerating(true);
-    
-    try {
-      const canvas = await html2canvas(receiptRef.current, {
-        scale: 2,
-        useCORS: true,
-        logging: false
-      });
-      
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: [210, 297] // A4
-      });
-      
-      const imgProps = pdf.getImageProperties(imgData);
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-      
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`receipt-${transaction.type}-${new Date().getTime()}.pdf`);
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-    } finally {
-      setIsGenerating(false);
+  // Format transaction type for display
+  const formatTransactionType = (type: string) => {
+    switch (type) {
+      case 'send':
+        return 'Money Transfer';
+      case 'airtime':
+        return 'Airtime Purchase';
+      case 'data':
+        return 'Data Bundle Purchase';
+      default:
+        return type.charAt(0).toUpperCase() + type.slice(1);
     }
   };
 
-  const downloadPNG = async () => {
-    if (!receiptRef.current) return;
-    
-    setIsGenerating(true);
-    
-    try {
-      const canvas = await html2canvas(receiptRef.current, {
-        scale: 2,
-        useCORS: true,
-        logging: false
-      });
-      
-      const imgData = canvas.toDataURL('image/png');
-      const link = document.createElement('a');
-      link.href = imgData;
-      link.download = `receipt-${transaction.type}-${new Date().getTime()}.png`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } catch (error) {
-      console.error('Error generating PNG:', error);
-    } finally {
-      setIsGenerating(false);
-    }
+  // Format date for display
+  const formatDate = (dateString: string, timestamp: number) => {
+    const date = new Date(timestamp);
+    return `${dateString} - ${date.toLocaleTimeString()}`;
   };
-
-  const recipient = 'to' in transaction 
-    ? transaction.to 
-    : transaction.phoneNumber;
-    
-  const transactionType = transaction.type;
-  const amount = transaction.amount;
-  const timestamp = transaction.timestamp;
-  const reference = (transaction as any).reference || `REF-${transaction.timestamp}`;
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div className="max-w-md mx-auto">
-        <div className="mb-6 flex">
-          <Button 
-            variant="outline" 
-            onClick={() => navigate(-1)} 
-            className="flex items-center"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" /> Back
-          </Button>
-          
-          <div className="flex ml-auto gap-2">
+    <div className="min-h-screen bg-gray-50 p-6 flex flex-col items-center">
+      <div className="w-full max-w-md">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold text-[#070058]">Transaction Receipt</h1>
+          <div className="flex gap-2">
             <Button 
+              size="icon" 
               variant="outline" 
-              onClick={generatePDF} 
-              disabled={isGenerating}
-              className="flex items-center"
+              onClick={handlePrint}
+              title="Print Receipt"
             >
-              <Download className="mr-2 h-4 w-4" /> PDF
+              <Printer size={16} />
             </Button>
             <Button 
+              size="icon" 
               variant="outline" 
-              onClick={downloadPNG} 
-              disabled={isGenerating}
-              className="flex items-center"
+              onClick={handleShare}
+              title="Share Receipt"
             >
-              <Download className="mr-2 h-4 w-4" /> PNG
-            </Button>
-            <Button 
-              variant="outline" 
-              onClick={() => window.print()} 
-              className="flex items-center print:hidden"
-            >
-              <Printer className="mr-2 h-4 w-4" /> Print
+              <Share2 size={16} />
             </Button>
           </div>
         </div>
         
-        <div 
-          ref={receiptRef} 
-          className="bg-white p-8 rounded-2xl shadow-md mb-8"
-        >
-          {/* Logo and Header */}
-          <div className="flex flex-col items-center mb-8 border-b pb-4">
-            <img src="/lovable-uploads/0af956c5-c425-481b-a902-d2974b9a9e0b.png" alt="Momo Quickpay Logo" className="w-16 h-16 object-contain mb-2" />
-            <h1 className="text-xl font-bold text-[#070058]">Momo Quickpay</h1>
-            <p className="text-sm text-gray-500">Transaction Receipt</p>
-          </div>
-          
-          {/* Transaction Icon and Type */}
-          <div className="flex items-center mb-6">
-            <div className="w-12 h-12 rounded-full bg-[#070058] flex items-center justify-center mr-4">
-              {getIcon(transactionType)}
-            </div>
-            <div>
-              <h2 className="text-lg font-bold text-[#070058]">{getTitle(transactionType)}</h2>
-              <p className="text-sm text-gray-500">Transaction completed successfully</p>
-            </div>
-          </div>
-          
-          {/* Transaction Details */}
-          <div className="space-y-4 mb-6">
-            <div className="flex justify-between py-2 border-b">
-              <p className="text-gray-500">Date & Time</p>
-              <p className="font-medium">{getFormattedDate(timestamp)}</p>
-            </div>
-            
-            <div className="flex justify-between py-2 border-b">
-              <p className="text-gray-500">Amount</p>
-              <p className="font-bold text-lg text-[#070058]">{amount}</p>
-            </div>
-            
-            <div className="flex justify-between py-2 border-b">
-              <p className="text-gray-500">Recipient</p>
-              <p className="font-medium">{recipient}</p>
-            </div>
-            
-            <div className="flex justify-between py-2 border-b">
-              <p className="text-gray-500">Transaction Type</p>
-              <p className="font-medium">{getTitle(transactionType)}</p>
-            </div>
-            
-            <div className="flex justify-between py-2 border-b">
-              <p className="text-gray-500">Reference</p>
-              <p className="font-medium">{reference}</p>
-            </div>
-            
-            {'dataPackage' in transaction && transaction.dataPackage && (
-              <div className="flex justify-between py-2 border-b">
-                <p className="text-gray-500">Data Package</p>
-                <p className="font-medium">{transaction.dataPackage}</p>
+        <Card className="shadow-lg print:shadow-none">
+          <CardContent className="p-0">
+            <div 
+              ref={receiptRef} 
+              className="bg-white p-6 rounded-lg"
+            >
+              {/* Header */}
+              <div className="flex justify-center mb-6">
+                <img 
+                  src="/lovable-uploads/0af956c5-c425-481b-a902-d2974b9a9e0b.png" 
+                  alt="Momo Quickpay Logo" 
+                  className="w-24 h-24 rounded-full"
+                />
               </div>
-            )}
-          </div>
-          
-          {/* Footer */}
-          <div className="text-center text-sm text-gray-500 mt-8 pt-4 border-t">
-            <p>Thank you for using Momo Quickpay</p>
-            <p className="mt-1">For support: support@momoquickpay.com</p>
-          </div>
+              
+              <div className="text-center mb-8">
+                <h2 className="text-xl font-bold text-[#070058]">Momo Quickpay</h2>
+                <p className="text-gray-500">Transaction Receipt</p>
+                <div className="mt-2">
+                  <span className="inline-block px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
+                    Success
+                  </span>
+                </div>
+              </div>
+              
+              <div className="border-t border-dashed pt-6">
+                <div className="space-y-4">
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Transaction Type:</span>
+                    <span className="font-medium">{formatTransactionType(transaction.type)}</span>
+                  </div>
+                  
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Recipient:</span>
+                    <span className="font-medium">{transaction.recipient}</span>
+                  </div>
+                  
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Amount:</span>
+                    <span className="font-bold text-[#070058]">{transaction.amount}</span>
+                  </div>
+                  
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Date:</span>
+                    <span className="font-medium">{formatDate(transaction.date, transaction.timestamp)}</span>
+                  </div>
+                  
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Reference:</span>
+                    <span className="font-medium">MQP-{Math.floor(transaction.timestamp / 1000)}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="mt-8 border-t border-dashed pt-6 text-center">
+                <p className="text-gray-500 text-sm">Thank you for using Momo Quickpay</p>
+                <p className="text-gray-400 text-xs mt-1">This receipt serves as proof of transaction</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <div className="mt-6 flex justify-center gap-4">
+          <Button 
+            variant="outline" 
+            onClick={handleDownloadPNG}
+            className="flex items-center gap-2"
+          >
+            <Download size={16} />
+            Save as PNG
+          </Button>
+          <Button 
+            onClick={handleDownloadPDF}
+            className="flex items-center gap-2 bg-[#070058] hover:bg-[#070058]/90"
+          >
+            <Download size={16} />
+            Save as PDF
+          </Button>
         </div>
       </div>
     </div>

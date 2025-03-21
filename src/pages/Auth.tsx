@@ -75,19 +75,8 @@ const Auth = () => {
       
       if (signUpError) throw signUpError;
       
-      // Create a profile entry (will also be handled by database triggers)
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          id: data.user?.id,
-          display_name: values.displayName,
-          phone_number: values.phoneNumber,
-          email: values.email
-        });
-        
-      if (profileError && profileError.code !== '23505') { // Ignore duplicate key errors (handled by trigger)
-        console.error("Error creating profile:", profileError);
-      }
+      // The profile will be created automatically by the database trigger
+      // We don't need to manually insert it anymore
       
       toast.success("Sign up successful! You can now log in.");
       setIsSignUp(false);
