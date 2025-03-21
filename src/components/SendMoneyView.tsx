@@ -8,6 +8,7 @@ import { useTransactions } from "@/hooks/useTransactions";
 
 interface SendMoneyViewProps {
   onBack: () => void;
+  onTransactionComplete?: (transaction: any) => Promise<void>;
 }
 
 interface StoredTransaction {
@@ -21,7 +22,7 @@ interface StoredTransaction {
   userId?: string;
 }
 
-const SendMoneyView = ({ onBack }: SendMoneyViewProps) => {
+const SendMoneyView = ({ onBack, onTransactionComplete }: SendMoneyViewProps) => {
   const [accountNumber, setAccountNumber] = useState("");
   const [step, setStep] = useState<"number" | "amount" | "scan">("number");
   const [amount, setAmount] = useState("");
@@ -70,6 +71,7 @@ const SendMoneyView = ({ onBack }: SendMoneyViewProps) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (step === "number") {
       if (!accountNumber) {
         toast.error("Please enter an account number or MomoPay code");
@@ -102,17 +104,22 @@ const SendMoneyView = ({ onBack }: SendMoneyViewProps) => {
         to: accountNumber,
         amount: `RWF ${amount}`,
         date: "Today" as const,
-        isMomoPay
+        isMomoPay,
+        timestamp: Date.now()
       };
       
-      await addTransaction(newTransaction);
-      
-      toast.success("Transaction completed successfully!");
-      
-      const ussdCode = isMomoPay
-        ? `tel:*182*8*1*${accountNumber}*${amount}%23`
-        : `tel:*182*1*1*${accountNumber}*${amount}%23`;
-      window.location.href = ussdCode;
+      if (onTransactionComplete) {
+        await onTransactionComplete(newTransaction);
+      } else {
+        await addTransaction(newTransaction);
+        
+        toast.success("Transaction completed successfully!");
+        
+        const ussdCode = isMomoPay
+          ? `tel:*182*8*1*${accountNumber}*${amount}%23`
+          : `tel:*182*1*1*${accountNumber}*${amount}%23`;
+        window.location.href = ussdCode;
+      }
     } catch (error) {
       console.error("Transaction failed:", error);
       toast.error("Transaction failed. Please try again.");

@@ -5,9 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 interface BuyDataViewProps {
   onBack: () => void;
+  onTransactionComplete?: (transaction: any) => Promise<void>;
 }
+
 interface DataPlan {
   id: string;
   name: string;
@@ -16,6 +19,7 @@ interface DataPlan {
   price: number;
   features: string[];
 }
+
 const allPlans: DataPlan[] = [{
   id: "1",
   name: "200MB",
@@ -52,33 +56,57 @@ const allPlans: DataPlan[] = [{
   price: 5000,
   features: ["1GB Per Day", "+ 200 SMS"]
 }];
+
 const dataPlansByCategory: Record<string, DataPlan[]> = {
   hot: allPlans,
   daily: allPlans.filter(plan => plan.category === "daily"),
   weekly: allPlans.filter(plan => plan.category === "weekly"),
   monthly: allPlans.filter(plan => plan.category === "monthly")
 };
+
 const BuyDataView = ({
-  onBack
+  onBack,
+  onTransactionComplete
 }: BuyDataViewProps) => {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [recentNumbers, setRecentNumbers] = useState<string[]>([]);
   const [selectedTab, setSelectedTab] = useState("hot");
+
   useEffect(() => {
     const stored = localStorage.getItem("recent_data_numbers");
     if (stored) {
       setRecentNumbers(JSON.parse(stored));
     }
   }, []);
+
   const handlePhoneNumberChange = (value: string) => {
     const cleaned = value.replace(/[^0-9]/g, '').slice(0, 10);
     setPhoneNumber(cleaned);
   };
+
   const handlePlanSelection = (plan: DataPlan) => {
-    toast.info("Service temporarily unavailable", {
-      description: "The data purchase service is currently undergoing maintenance."
-    });
+    if (onTransactionComplete) {
+      const transaction = {
+        type: "data" as const,
+        phoneNumber: phoneNumber || "07XXXXXXXX",
+        amount: `RWF ${plan.price}`,
+        dataPackage: plan.name,
+        date: "Today" as const,
+        timestamp: Date.now()
+      };
+      
+      toast.info("Service temporarily unavailable", {
+        description: "The data purchase service is currently undergoing maintenance."
+      });
+      
+      onTransactionComplete(transaction);
+    } else {
+      toast.info("Service temporarily unavailable", {
+        description: "The data purchase service is currently undergoing maintenance."
+      });
+    }
   };
+
   return <div className="min-h-screen bg-gray-50 overflow-y-auto">
       <div className="bg-[#070058] h-[120px] relative overflow-hidden">
         <img src="/lovable-uploads/0af956c5-c425-481b-a902-d2974b9a9e0b.png" alt="Banner Background" className="absolute inset-0 w-full h-full object-cover opacity-70" />
@@ -162,4 +190,5 @@ const BuyDataView = ({
       </div>
     </div>;
 };
+
 export default BuyDataView;

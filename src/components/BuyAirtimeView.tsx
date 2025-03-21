@@ -3,34 +3,43 @@ import { ArrowLeft, Smartphone, Star } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+
 interface BuyAirtimeViewProps {
   onBack: () => void;
+  onTransactionComplete?: (transaction: any) => Promise<void>;
 }
+
 interface AirtimeTransaction {
   phoneNumber: string;
   amount: string;
   date: string;
   isFavorite?: boolean;
 }
+
 const BuyAirtimeView = ({
-  onBack
+  onBack,
+  onTransactionComplete
 }: BuyAirtimeViewProps) => {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [amount, setAmount] = useState("");
   const [airtimeHistory, setAirtimeHistory] = useState<AirtimeTransaction[]>([]);
   const [activeTab, setActiveTab] = useState<"recent" | "favorite">("recent");
+
   useEffect(() => {
     const stored = localStorage.getItem("airtime_history");
     if (stored) {
       setAirtimeHistory(JSON.parse(stored));
     }
   }, []);
+
   const handleQuickAmount = (value: string) => {
     setAmount(value);
   };
+
   const selectFromHistory = (transaction: AirtimeTransaction) => {
     setPhoneNumber(transaction.phoneNumber);
   };
+
   const toggleFavorite = (phoneNumber: string, e: React.MouseEvent) => {
     e.stopPropagation();
     const updatedHistory = airtimeHistory.map(transaction => {
@@ -46,6 +55,7 @@ const BuyAirtimeView = ({
     setAirtimeHistory(updatedHistory);
     toast.success(updatedHistory.find(t => t.phoneNumber === phoneNumber)?.isFavorite ? "Added to favorites" : "Removed from favorites");
   };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!phoneNumber) {
@@ -61,7 +71,14 @@ const BuyAirtimeView = ({
       return;
     }
 
-    // Save to airtime history only
+    const transaction = {
+      phoneNumber,
+      amount: `RWF ${amount}`,
+      date: "Today",
+      timestamp: Date.now(),
+      type: "airtime" as const
+    };
+
     const newTransaction = {
       phoneNumber,
       amount: `RWF ${amount}`,
@@ -71,20 +88,20 @@ const BuyAirtimeView = ({
     localStorage.setItem("airtime_history", JSON.stringify(updatedHistory));
     setAirtimeHistory(updatedHistory);
 
-    // Save to general transactions (main dashboard)
-    const transaction = {
-      phoneNumber,
-      amount: `RWF ${amount}`,
-      date: "Today",
-      type: "airtime" as const
-    };
-    const stored = localStorage.getItem("transactions");
-    const transactions = stored ? JSON.parse(stored) : [];
-    localStorage.setItem("transactions", JSON.stringify([transaction, ...transactions].slice(0, 10)));
-    const ussdCode = `tel:*182*2*1*1*2*${amount}*${phoneNumber}%23`;
-    window.location.href = ussdCode;
+    if (onTransactionComplete) {
+      onTransactionComplete(transaction);
+    } else {
+      const stored = localStorage.getItem("transactions");
+      const transactions = stored ? JSON.parse(stored) : [];
+      localStorage.setItem("transactions", JSON.stringify([transaction, ...transactions].slice(0, 10)));
+      
+      const ussdCode = `tel:*182*2*1*1*2*${amount}*${phoneNumber}%23`;
+      window.location.href = ussdCode;
+    }
   };
+
   const filteredTransactions = activeTab === "favorite" ? airtimeHistory.filter(t => t.isFavorite) : airtimeHistory;
+
   return <div className="min-h-screen bg-gray-50">
       <div className="bg-[#070058] h-[120px] relative overflow-hidden">
         <img src="/lovable-uploads/0af956c5-c425-481b-a902-d2974b9a9e0b.png" alt="Banner Background" className="absolute inset-0 w-full h-full object-cover opacity-70" />
@@ -155,4 +172,5 @@ const BuyAirtimeView = ({
       </div>
     </div>;
 };
+
 export default BuyAirtimeView;

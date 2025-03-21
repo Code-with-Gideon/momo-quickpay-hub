@@ -10,6 +10,7 @@ import BuyDataView from "./BuyDataView";
 import RecentTransactions from "./RecentTransactions";
 import { useTransactions } from "@/hooks/useTransactions";
 import { useNavigate } from "react-router-dom";
+import { Transaction } from "@/utils/transactionService";
 
 export interface TransactionDashboardProps {
   userId?: string;
@@ -86,7 +87,7 @@ const TransactionDashboard = ({ userId, isAdmin }: TransactionDashboardProps) =>
 
               <TabsContent value="transactions">
                 <RecentTransactions 
-                  transactions={transactions}
+                  transactions={transactions as Transaction[]}
                   isLoading={isLoading}
                 />
               </TabsContent>
