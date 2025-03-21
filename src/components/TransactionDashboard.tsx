@@ -110,7 +110,7 @@ const TransactionDashboard: React.FC<TransactionDashboardProps> = ({
                   <CardTitle>Send Money</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <SendMoneyView onTransactionComplete={addTransaction} />
+                  <SendMoneyView onBack={() => {}} />
                 </CardContent>
               </Card>
             </TabsContent>
@@ -121,7 +121,7 @@ const TransactionDashboard: React.FC<TransactionDashboardProps> = ({
                   <CardTitle>Buy Airtime</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <BuyAirtimeView onTransactionComplete={addTransaction} />
+                  <BuyAirtimeView onBack={() => {}} />
                 </CardContent>
               </Card>
             </TabsContent>
@@ -132,7 +132,7 @@ const TransactionDashboard: React.FC<TransactionDashboardProps> = ({
                   <CardTitle>Buy Data Bundle</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <BuyDataView onTransactionComplete={addTransaction} />
+                  <BuyDataView onBack={() => {}} />
                 </CardContent>
               </Card>
             </TabsContent>
@@ -145,10 +145,7 @@ const TransactionDashboard: React.FC<TransactionDashboardProps> = ({
               <CardTitle>Recent Transactions</CardTitle>
             </CardHeader>
             <CardContent>
-              <RecentTransactions 
-                transactions={transactions.slice(0, 5)} 
-                isLoading={isLoading}
-              />
+              <RecentTransactions />
               <div className="mt-4">
                 <Button 
                   variant="outline" 
