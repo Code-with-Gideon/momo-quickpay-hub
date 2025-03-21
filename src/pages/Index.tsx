@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { Link } from "react-router-dom";
 import UserMenu from "@/components/UserMenu";
+import { useTransactions } from "@/hooks/useTransactions";
 
 type Screen = "home" | "qr" | "number" | "momopay" | "generate" | "send" | "airtime" | "data";
 
@@ -22,6 +23,8 @@ const Index = () => {
   const [currentScreen, setCurrentScreen] = useState<Screen>("home");
   const [mode, setMode] = useState<"send" | "receive" | null>(null);
   const { user } = useAuth();
+  // Use our custom hook to get recent transactions (last 7 days)
+  const { transactions, isLoading } = useTransactions({ recentDays: 7 });
 
   const handleQRScanSuccess = (decodedText: string) => {
     try {
@@ -81,7 +84,7 @@ const Index = () => {
             </Button>
           </div>
 
-          <RecentTransactions />
+          <RecentTransactions transactions={transactions} isLoading={isLoading} />
           <FeedbackForm />
         </div>;
     }
