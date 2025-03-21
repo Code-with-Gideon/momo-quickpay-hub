@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -61,8 +60,8 @@ const Auth = () => {
     setError(null);
 
     try {
-      // Sign up with email and password
-      const { error: signUpError, data } = await supabase.auth.signUp({
+      // Sign up with email and password, providing metadata for profiles table
+      const { error: signUpError } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
         options: {
@@ -74,9 +73,6 @@ const Auth = () => {
       });
       
       if (signUpError) throw signUpError;
-      
-      // The profile will be created automatically by the database trigger
-      // We don't need to manually insert it anymore
       
       toast.success("Sign up successful! You can now log in.");
       setIsSignUp(false);

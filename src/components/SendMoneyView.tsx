@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import QRScanner from "./QRScanner";
+import { useTransactions } from "@/hooks/useTransactions";
 
 interface SendMoneyViewProps {
   onBack: () => void;
@@ -28,6 +29,8 @@ const SendMoneyView = ({ onBack }: SendMoneyViewProps) => {
   const [recentTransactions, setRecentTransactions] = useState<StoredTransaction[]>([]);
   const [activeTab, setActiveTab] = useState<"recent" | "favorite">("recent");
   const [isMomoPay, setIsMomoPay] = useState(false);
+  
+  const { addTransaction } = useTransactions();
 
   useEffect(() => {
     const stored = localStorage.getItem("send_money_history");
@@ -37,7 +40,6 @@ const SendMoneyView = ({ onBack }: SendMoneyViewProps) => {
   }, []);
 
   useEffect(() => {
-    // Check if the input matches MomoPay format (5 digits)
     setIsMomoPay(/^\d{4,6}$/.test(accountNumber));
   }, [accountNumber]);
 
@@ -66,26 +68,7 @@ const SendMoneyView = ({ onBack }: SendMoneyViewProps) => {
     );
   };
 
-  const saveTransaction = (transaction: StoredTransaction) => {
-    // Add timestamp and userId to the transaction
-    const enhancedTransaction = {
-      ...transaction,
-      timestamp: Date.now(),
-      userId: 'demo-user' // In a real app, this would be the authenticated user's ID
-    };
-    
-    const stored = localStorage.getItem("send_money_history");
-    const transactions = stored ? JSON.parse(stored) : [];
-    const newTransactions = [enhancedTransaction, ...transactions].slice(0, 10);
-    localStorage.setItem("send_money_history", JSON.stringify(newTransactions));
-    
-    // Also save to general transactions for the main dashboard
-    const generalStored = localStorage.getItem("transactions");
-    const generalTransactions = generalStored ? JSON.parse(generalStored) : [];
-    localStorage.setItem("transactions", JSON.stringify([enhancedTransaction, ...generalTransactions].slice(0, 10)));
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (step === "number") {
       if (!accountNumber) {
@@ -103,6 +86,7 @@ const SendMoneyView = ({ onBack }: SendMoneyViewProps) => {
       setStep("amount");
       return;
     }
+    
     if (!amount) {
       toast.error("Please enter an amount");
       return;
@@ -112,19 +96,27 @@ const SendMoneyView = ({ onBack }: SendMoneyViewProps) => {
       return;
     }
 
-    saveTransaction({
-      phoneNumber: accountNumber,
-      amount: `RWF ${amount}`,
-      date: "Today",
-      type: "send",
-      isMomoPay
-    });
-
-    // Different USSD format for MomoPay and regular transfers
-    const ussdCode = isMomoPay
-      ? `tel:*182*8*1*${accountNumber}*${amount}%23`
-      : `tel:*182*1*1*${accountNumber}*${amount}%23`;
-    window.location.href = ussdCode;
+    try {
+      const newTransaction = {
+        type: "send" as const,
+        to: accountNumber,
+        amount: `RWF ${amount}`,
+        date: "Today" as const,
+        isMomoPay
+      };
+      
+      await addTransaction(newTransaction);
+      
+      toast.success("Transaction completed successfully!");
+      
+      const ussdCode = isMomoPay
+        ? `tel:*182*8*1*${accountNumber}*${amount}%23`
+        : `tel:*182*1*1*${accountNumber}*${amount}%23`;
+      window.location.href = ussdCode;
+    } catch (error) {
+      console.error("Transaction failed:", error);
+      toast.error("Transaction failed. Please try again.");
+    }
   };
 
   const handleQRScanComplete = (scannedData: string) => {
@@ -132,7 +124,6 @@ const SendMoneyView = ({ onBack }: SendMoneyViewProps) => {
       const parsedData = JSON.parse(scannedData);
       if (parsedData.code) {
         setAccountNumber(parsedData.code);
-        // Check if the scanned code is a MomoPay code
         setIsMomoPay(/^\d{5}$/.test(parsedData.code));
         setStep("amount");
       } else {

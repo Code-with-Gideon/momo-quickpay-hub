@@ -41,6 +41,8 @@ const TransactionDashboard: React.FC<TransactionDashboardProps> = ({
   const [showAllTransactions, setShowAllTransactions] = useState(false);
   const [filterType, setFilterType] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
+  
+  // Use the useTransactions hook to fetch and manage transactions
   const { transactions, addTransaction, isLoading } = useTransactions({ 
     userId: userId,
     refreshInterval: 5000 // Refresh every 5 seconds

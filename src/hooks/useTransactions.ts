@@ -175,7 +175,7 @@ export function useTransactions(options: UseTransactionsOptions = {}) {
     };
   }, [options.userId, options.type, options.recentDays, options.refreshInterval, user]);
 
-  // Additional function to add a new transaction
+  // Function to add a new transaction
   const addTransaction = async (transaction: Omit<Transaction, 'timestamp' | 'userId'> & { timestamp?: number, userId?: string }) => {
     // Generate a full transaction object for local storage
     const fullTransaction = {
