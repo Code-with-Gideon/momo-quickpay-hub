@@ -11,42 +11,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
 
 const UserMenu = () => {
   const { user, signOut, isAdmin } = useAuth();
   const navigate = useNavigate();
-  const [displayName, setDisplayName] = useState<string>("");
-
-  useEffect(() => {
-    if (user) {
-      fetchUserProfile();
-    }
-  }, [user]);
-
-  const fetchUserProfile = async () => {
-    if (!user) return;
-    
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('display_name')
-        .eq('id', user.id)
-        .single();
-      
-      if (error) {
-        console.error("Error fetching profile:", error);
-        return;
-      }
-      
-      if (data && data.display_name) {
-        setDisplayName(data.display_name);
-      }
-    } catch (error) {
-      console.error("Failed to fetch user profile:", error);
-    }
-  };
 
   const handleSignOut = async () => {
     await signOut();
@@ -75,7 +43,7 @@ const UserMenu = () => {
         >
           <User2 className="h-4 w-4" />
           <span className="max-w-[120px] truncate hidden sm:inline-block">
-            {displayName || user.email?.split('@')[0] || "User"}
+            {user.email}
           </span>
           <ChevronDown className="h-4 w-4" />
         </Button>
@@ -85,17 +53,11 @@ const UserMenu = () => {
         <DropdownMenuSeparator />
         <DropdownMenuItem>
           <User className="mr-2 h-4 w-4" />
-          <span>{displayName || user.email?.split('@')[0] || "User"}</span>
-        </DropdownMenuItem>
-        <DropdownMenuItem className="text-gray-500 text-sm">
-          {user.email}
+          <span>{user.email}</span>
         </DropdownMenuItem>
         {isAdmin && (
-          <DropdownMenuItem 
-            className="text-blue-600 font-medium"
-            onClick={() => navigate("/admin-dashboard")}
-          >
-            Admin Dashboard
+          <DropdownMenuItem className="text-blue-600 font-medium">
+            Admin Account
           </DropdownMenuItem>
         )}
         <DropdownMenuSeparator />
