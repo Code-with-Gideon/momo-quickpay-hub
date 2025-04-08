@@ -59,6 +59,13 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Check if this is a password reset
     if (authEvent.includes('RECOVERY')) {
+      // Make sure the reset URL uses query parameters instead of hash fragments
+      let confirmationUrl = data.user.confirmation_url;
+      
+      // Ensure the URL is correctly formatted for Auth page
+      const redirectUrl = new URL(window.location.origin + '/auth');
+      redirectUrl.searchParams.set('reset', 'true');
+      
       // Override default Supabase password recovery email template
       return new Response(
         JSON.stringify({

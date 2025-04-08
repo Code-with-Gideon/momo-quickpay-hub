@@ -35,6 +35,42 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
+    // Handle hash fragments from password reset links on initial load
+    const handleHashParams = async () => {
+      const hash = window.location.hash;
+      if (hash && hash.includes('access_token') && hash.includes('type=recovery')) {
+        try {
+          // Extract the access token from the hash
+          const hashParams = new URLSearchParams(hash.substring(1));
+          const accessToken = hashParams.get('access_token');
+          
+          if (accessToken) {
+            // Set the access token in the session
+            const { data, error } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: hashParams.get('refresh_token') || '',
+            });
+            
+            if (error) {
+              console.error("Error setting session from hash params:", error);
+            } else if (data.session) {
+              setSession(data.session);
+              setUser(data.session.user);
+              checkAdminStatus(data.session.user.email || "");
+              
+              // Redirect to the password reset page
+              window.location.href = '/auth?reset=true';
+            }
+          }
+        } catch (error) {
+          console.error("Error processing hash params:", error);
+        }
+      }
+    };
+
+    // Process hash parameters first
+    handleHashParams();
+    
     // Fetch the initial session
     const fetchSession = async () => {
       const { data } = await supabase.auth.getSession();
