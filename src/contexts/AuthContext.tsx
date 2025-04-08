@@ -10,6 +10,7 @@ interface AuthContextType {
   isLoading: boolean;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
+  updatePassword: (password: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -19,6 +20,7 @@ const AuthContext = createContext<AuthContextType>({
   isLoading: true,
   signOut: async () => {},
   resetPassword: async () => {},
+  updatePassword: async () => {},
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -100,6 +102,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       throw error;
     }
   };
+  
+  // New function to update password after reset
+  const updatePassword = async (password: string) => {
+    const { error } = await supabase.auth.updateUser({ password });
+    
+    if (error) {
+      throw error;
+    }
+  };
 
   return (
     <AuthContext.Provider value={{ 
@@ -108,7 +119,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       isAdmin, 
       isLoading, 
       signOut, 
-      resetPassword 
+      resetPassword,
+      updatePassword
     }}>
       {children}
     </AuthContext.Provider>

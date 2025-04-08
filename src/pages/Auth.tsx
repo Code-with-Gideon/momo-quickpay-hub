@@ -1,6 +1,6 @@
 
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,18 +9,34 @@ import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, ArrowRight } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("signin");
   const [showPassword, setShowPassword] = useState(false);
   const [resetPasswordMode, setResetPasswordMode] = useState(false);
+  const [updatePasswordMode, setUpdatePasswordMode] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
+  const { resetPassword, updatePassword } = useAuth();
+
+  // Check for reset password mode based on URL parameters
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const isReset = params.get("reset") === "true";
+    const hasType = params.get("type") === "recovery";
+    
+    if (isReset || hasType) {
+      setUpdatePasswordMode(true);
+    }
+  }, [location]);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,6 +61,7 @@ const Auth = () => {
             display_name: displayName,
             phone_number: phoneNumber,
           },
+          emailRedirectTo: window.location.origin + '/auth',
         },
       });
       
@@ -123,13 +140,7 @@ const Auth = () => {
     try {
       setIsLoading(true);
       
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.origin + '/auth?reset=true',
-      });
-      
-      if (error) {
-        throw error;
-      }
+      await resetPassword(email);
       
       toast({
         title: "Password reset email sent",
@@ -150,6 +161,52 @@ const Auth = () => {
     }
   };
 
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!password) {
+      toast({
+        title: "Error",
+        description: "Please enter a new password.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      toast({
+        title: "Error",
+        description: "Passwords do not match.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    try {
+      setIsLoading(true);
+      
+      await updatePassword(password);
+      
+      toast({
+        title: "Password updated",
+        description: "Your password has been updated successfully.",
+      });
+      
+      // Redirect to login
+      setUpdatePasswordMode(false);
+      navigate("/auth");
+      
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update password.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
@@ -163,7 +220,61 @@ const Auth = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {resetPasswordMode ? (
+          {updatePasswordMode ? (
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold text-center mb-4">Set New Password</h2>
+              <form onSubmit={handleUpdatePassword} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="new-password">New Password</Label>
+                  <div className="relative">
+                    <Input
+                      id="new-password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Enter new password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      className="pr-10"
+                    />
+                    <button 
+                      type="button"
+                      onClick={togglePasswordVisibility}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4 text-gray-500" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-gray-500" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="confirm-password">Confirm Password</Label>
+                  <div className="relative">
+                    <Input
+                      id="confirm-password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Confirm new password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      required
+                      className="pr-10"
+                    />
+                  </div>
+                </div>
+                
+                <Button 
+                  type="submit" 
+                  className="w-full bg-[#070058] hover:bg-[#0a008c]"
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Updating password..." : "Update Password"}
+                </Button>
+              </form>
+            </div>
+          ) : resetPasswordMode ? (
             <div className="space-y-4">
               <h2 className="text-xl font-semibold text-center mb-4">Reset Password</h2>
               <form onSubmit={handleResetPassword} className="space-y-4">

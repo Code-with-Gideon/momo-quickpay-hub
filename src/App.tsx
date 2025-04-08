@@ -35,6 +35,8 @@ const App = () => (
                   <AdminDashboard />
                 </ProtectedRoute>
               } />
+              {/* Add a catch-all route for password reset links */}
+              <Route path="/auth/callback/*" element={<Navigate to="/auth?reset=true" replace />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </BrowserRouter>
