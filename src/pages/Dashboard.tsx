@@ -1,9 +1,8 @@
+
 import { useAuth } from "@/contexts/AuthContext";
 import UserMenu from "@/components/UserMenu";
 import { useTransactions } from "@/hooks/useTransactions";
 import RecentTransactions from "@/components/RecentTransactions";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Send, Smartphone, Signal, ArrowLeft } from "lucide-react";
 import { useState } from "react";
@@ -105,92 +104,41 @@ const Dashboard = () => {
           </div>
         </div>
 
-        <Tabs defaultValue="services" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="services">Quick Services</TabsTrigger>
-            <TabsTrigger value="history">Transaction History</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="services">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-              <Card
-                className="cursor-pointer hover:border-[#070058] transition-colors"
-                onClick={() => setActiveView("send")}
-              >
-                <CardHeader className="flex flex-row items-center justify-center py-4">
-                  <div className="w-12 h-12 rounded-full bg-[#070058] flex items-center justify-center">
-                    <Send className="w-6 h-6 text-white" />
-                  </div>
-                </CardHeader>
-                <CardContent className="text-center pt-0">
-                  <h3 className="font-semibold text-[#070058]">Send Money</h3>
-                  <p className="text-sm text-gray-500 mt-1">Transfer to another account</p>
-                </CardContent>
-              </Card>
-              
-              <Card
-                className="cursor-pointer hover:border-[#070058] transition-colors"
-                onClick={() => setActiveView("airtime")}
-              >
-                <CardHeader className="flex flex-row items-center justify-center py-4">
-                  <div className="w-12 h-12 rounded-full bg-[#070058] flex items-center justify-center">
-                    <Smartphone className="w-6 h-6 text-white" />
-                  </div>
-                </CardHeader>
-                <CardContent className="text-center pt-0">
-                  <h3 className="font-semibold text-[#070058]">Buy Airtime</h3>
-                  <p className="text-sm text-gray-500 mt-1">Purchase airtime for any number</p>
-                </CardContent>
-              </Card>
-              
-              <Card
-                className="cursor-pointer hover:border-[#070058] transition-colors"
-                onClick={() => setActiveView("data")}
-              >
-                <CardHeader className="flex flex-row items-center justify-center py-4">
-                  <div className="w-12 h-12 rounded-full bg-[#070058] flex items-center justify-center">
-                    <Signal className="w-6 h-6 text-white" />
-                  </div>
-                </CardHeader>
-                <CardContent className="text-center pt-0">
-                  <h3 className="font-semibold text-[#070058]">Buy Data</h3>
-                  <p className="text-sm text-gray-500 mt-1">Purchase data bundles</p>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="history">
-            <div className="mt-6">
-              <RecentTransactions 
-                transactions={transactions} 
-                isLoading={isLoading}
-              />
-            </div>
-          </TabsContent>
-        </Tabs>
+        <div className="grid grid-cols-2 gap-4">
+          <Button onClick={() => setActiveView("send")} className="h-[72px] bg-[#070058] hover:bg-[#070058]/90 text-white flex flex-col items-center justify-center gap-2 rounded-xl shadow-md transition-all duration-200 hover:scale-[1.02] text-center">
+            <Send className="w-6 h-6" />
+            <span className="text-sm font-medium">Send Money</span>
+          </Button>
+          <Button onClick={() => navigate("/dashboard/generate")} variant="outline" className="h-[72px] border-2 hover:bg-gray-50 text-[#070058] flex flex-col items-center justify-center gap-2 rounded-xl shadow-sm transition-all duration-200 hover:scale-[1.02] text-center">
+            <Signal className="w-6 h-6" />
+            <span className="text-sm font-medium">Receive Money</span>
+          </Button>
+          <Button onClick={() => setActiveView("airtime")} variant="outline" className="h-[72px] border-2 hover:bg-gray-50 text-[#070058] flex flex-col items-center justify-center gap-2 rounded-xl shadow-sm transition-all duration-200 hover:scale-[1.02] text-center">
+            <Smartphone className="w-6 h-6" />
+            <span className="text-sm font-medium">Buy Airtime</span>
+          </Button>
+          <Button onClick={() => setActiveView("data")} variant="outline" className="h-[72px] border-2 hover:bg-gray-50 text-[#070058] flex flex-col items-center justify-center gap-2 rounded-xl shadow-sm transition-all duration-200 hover:scale-[1.02] text-center">
+            <Signal className="w-6 h-6" />
+            <span className="text-sm font-medium">Buy Data</span>
+          </Button>
+        </div>
+
+        <RecentTransactions 
+          transactions={transactions} 
+          isLoading={isLoading}
+          limit={5}
+        />
       </div>
     );
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-6">
-      <div className="max-w-6xl mx-auto px-4">
-        <header className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-[#070058]">
-            Momo Quickpay Dashboard
-          </h1>
-          <div className="flex items-center gap-4">
-            <Button 
-              variant="outline" 
-              onClick={() => navigate("/")}
-              className="border-[#070058] text-[#070058]"
-            >
-              Home
-            </Button>
-            <UserMenu />
-          </div>
-        </header>
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-lg mx-auto px-4 py-6">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-xl font-bold text-[#070058]">MoMo Quickpay</h1>
+          <UserMenu />
+        </div>
         
         <div className="bg-white rounded-2xl p-6 shadow-sm">
           {renderContent()}

@@ -21,6 +21,9 @@ const AuthContext = createContext<AuthContextType>({
 
 export const useAuth = () => useContext(AuthContext);
 
+// Admin email constant
+const ADMIN_EMAIL = "company.qpay@gmail.com";
+
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
@@ -62,9 +65,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
   }, []);
 
-  // For demo purposes, check if email contains "admin" to grant admin privileges
+  // Check if email is the specific admin email
   const checkAdminStatus = (email: string) => {
-    setIsAdmin(email.includes("admin"));
+    setIsAdmin(email === ADMIN_EMAIL);
   };
 
   // Fetch profile data to ensure it exists

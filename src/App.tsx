@@ -31,7 +31,7 @@ const App = () => (
               } />
               <Route path="/receipt/:id" element={<Receipt />} />
               <Route path="/admin" element={
-                <ProtectedRoute>
+                <ProtectedRoute requireAdmin={true}>
                   <AdminDashboard />
                 </ProtectedRoute>
               } />
