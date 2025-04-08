@@ -1,4 +1,3 @@
-
 import { useAuth } from "@/contexts/AuthContext";
 import UserMenu from "@/components/UserMenu";
 import { useTransactions } from "@/hooks/useTransactions";
@@ -28,7 +27,9 @@ const Dashboard = () => {
     const savedTransaction = await addTransaction(transaction);
     
     // Navigate to receipt page and pass transaction data
-    navigate(`/receipt/${savedTransaction.id}`, { 
+    // Since the Transaction type doesn't have an 'id' property directly,
+    // we use a reference or timestamp to identify the transaction
+    navigate(`/receipt/${savedTransaction.timestamp}`, { 
       state: { 
         transaction: savedTransaction,
         isNew: true 
