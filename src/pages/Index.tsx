@@ -84,7 +84,11 @@ const Index = () => {
             </Button>
           </div>
 
-          <RecentTransactions transactions={transactions} isLoading={isLoading} />
+          <RecentTransactions 
+            transactions={transactions} 
+            isLoading={isLoading}
+            limit={5} 
+          />
           <FeedbackForm />
         </div>;
     }
