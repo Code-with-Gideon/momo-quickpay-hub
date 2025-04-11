@@ -5,7 +5,6 @@ import AdminDashboard from "@/pages/AdminDashboard";
 import Receipt from "@/pages/Receipt";
 import FeedbackForm from "@/components/FeedbackForm";
 import {
-  BrowserRouter as Router,
   Routes,
   Route,
   Navigate,
