@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { ArrowLeft, QrCode, User2, Send, Star, Store } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -93,8 +94,37 @@ const SendMoneyView = ({ onBack, onTransactionComplete }: SendMoneyViewProps) =>
       toast.error("Please enter an amount");
       return;
     }
-    if (!/^\d+$/.test(amount)) {
+    
+    // Validate minimum and maximum amounts
+    const numAmount = parseFloat(amount);
+    if (isNaN(numAmount)) {
       toast.error("Please enter a valid amount");
+      return;
+    }
+    
+    if (numAmount < 100) {
+      toast.error("Minimum amount is 100 RWF");
+      return;
+    }
+    
+    if (numAmount > 5000000) {
+      toast.error("Maximum amount is 5,000,000 RWF");
+      return;
+    }
+    
+    // Add daily limit check
+    // This would ideally be handled server-side with proper tracking
+    const today = new Date().toDateString();
+    const recentTxs = recentTransactions.filter(t => 
+      new Date(t.timestamp || 0).toDateString() === today
+    );
+    const dailyTotal = recentTxs.reduce((sum, t) => {
+      const txAmount = parseFloat(t.amount.replace(/[^0-9.]/g, ""));
+      return sum + (isNaN(txAmount) ? 0 : txAmount);
+    }, 0);
+    
+    if (dailyTotal + numAmount > 10000000) {
+      toast.error("Daily limit of 10,000,000 RWF exceeded");
       return;
     }
 

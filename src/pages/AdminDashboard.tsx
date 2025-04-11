@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -8,8 +7,26 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Search, Download, ChevronLeft, ChevronRight, BarChart, Users } from "lucide-react";
+import { 
+  Search, Download, ChevronLeft, ChevronRight, BarChart, 
+  Users, Edit, Trash2, X, Check, AlertTriangle 
+} from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { 
+  Dialog, DialogContent, DialogHeader, DialogTitle, 
+  DialogDescription, DialogFooter, DialogTrigger 
+} from "@/components/ui/dialog";
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 interface UserType {
   id: string;
@@ -46,6 +63,8 @@ const AdminDashboard = () => {
   const [totalUsers, setTotalUsers] = useState(0);
   const [totalTransactions, setTotalTransactions] = useState(0);
   const [totalAmount, setTotalAmount] = useState(0);
+  const [editTransaction, setEditTransaction] = useState<TransactionType | null>(null);
+  const [deleteConfirmation, setDeleteConfirmation] = useState<string | null>(null);
   const itemsPerPage = 10;
 
   useEffect(() => {
@@ -190,6 +209,281 @@ const AdminDashboard = () => {
       day: 'numeric' 
     });
   };
+
+  const updateTransaction = async (values: Partial<TransactionType>) => {
+    if (!editTransaction) return;
+    
+    try {
+      const { error } = await supabase
+        .from('transactions')
+        .update({ 
+          amount: values.amount,
+          recipient: values.recipient,
+          description: values.description,
+          status: values.status
+        })
+        .eq('id', editTransaction.id);
+        
+      if (error) {
+        throw error;
+      }
+      
+      // Update local state with modified transaction
+      setTransactions(prev => 
+        prev.map(t => t.id === editTransaction.id 
+          ? { ...t, ...values } 
+          : t
+        )
+      );
+      
+      setEditTransaction(null);
+      toast.success("Transaction updated successfully");
+    } catch (error) {
+      console.error("Error updating transaction:", error);
+      toast.error("Failed to update transaction");
+    }
+  };
+
+  const deleteTransaction = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('transactions')
+        .delete()
+        .eq('id', id);
+        
+      if (error) {
+        throw error;
+      }
+      
+      // Remove deleted transaction from local state
+      setTransactions(prev => prev.filter(t => t.id !== id));
+      setDeleteConfirmation(null);
+      toast.success("Transaction deleted successfully");
+    } catch (error) {
+      console.error("Error deleting transaction:", error);
+      toast.error("Failed to delete transaction");
+    }
+  };
+
+  const handleEditSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editTransaction) return;
+    
+    updateTransaction({
+      amount: editTransaction.amount,
+      recipient: editTransaction.recipient,
+      description: editTransaction.description,
+      status: editTransaction.status
+    });
+  };
+
+  const renderTransactionsTable = () => (
+    <div className="overflow-x-auto">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Type</TableHead>
+            <TableHead>Amount</TableHead>
+            <TableHead>Recipient</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Date</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {transactions.map((transaction) => (
+            <TableRow key={transaction.id}>
+              <TableCell className="capitalize">
+                {transaction.transaction_type}
+              </TableCell>
+              <TableCell>RWF {transaction.amount.toLocaleString()}</TableCell>
+              <TableCell>{transaction.recipient}</TableCell>
+              <TableCell>
+                <span 
+                  className={`inline-block px-2 py-1 text-xs rounded-full ${
+                    transaction.status === 'completed' 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-yellow-100 text-yellow-800'
+                  }`}
+                >
+                  {transaction.status}
+                </span>
+              </TableCell>
+              <TableCell>{formatDate(transaction.created_at)}</TableCell>
+              <TableCell className="text-right space-x-2">
+                <Dialog open={editTransaction?.id === transaction.id} 
+                  onOpenChange={(open) => !open && setEditTransaction(null)}>
+                  <DialogTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setEditTransaction(transaction)}
+                    >
+                      <Edit className="h-3.5 w-3.5 mr-1" />
+                      Edit
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Edit Transaction</DialogTitle>
+                      <DialogDescription>
+                        Make changes to this transaction.
+                      </DialogDescription>
+                    </DialogHeader>
+                    {editTransaction && (
+                      <form onSubmit={handleEditSubmit} className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <label htmlFor="amount" className="text-sm font-medium">
+                              Amount
+                            </label>
+                            <Input 
+                              id="amount"
+                              type="number"
+                              value={editTransaction.amount}
+                              onChange={(e) => setEditTransaction({
+                                ...editTransaction,
+                                amount: parseFloat(e.target.value)
+                              })}
+                            />
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <label htmlFor="recipient" className="text-sm font-medium">
+                              Recipient
+                            </label>
+                            <Input 
+                              id="recipient"
+                              value={editTransaction.recipient}
+                              onChange={(e) => setEditTransaction({
+                                ...editTransaction,
+                                recipient: e.target.value
+                              })}
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <label htmlFor="description" className="text-sm font-medium">
+                            Description
+                          </label>
+                          <Input 
+                            id="description"
+                            value={editTransaction.description || ''}
+                            onChange={(e) => setEditTransaction({
+                              ...editTransaction,
+                              description: e.target.value
+                            })}
+                          />
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <label htmlFor="status" className="text-sm font-medium">
+                            Status
+                          </label>
+                          <select
+                            id="status"
+                            value={editTransaction.status}
+                            onChange={(e) => setEditTransaction({
+                              ...editTransaction,
+                              status: e.target.value
+                            })}
+                            className="w-full px-3 py-2 border rounded-md"
+                          >
+                            <option value="completed">Completed</option>
+                            <option value="pending">Pending</option>
+                            <option value="failed">Failed</option>
+                          </select>
+                        </div>
+                        
+                        <DialogFooter>
+                          <Button 
+                            type="button" 
+                            variant="secondary" 
+                            onClick={() => setEditTransaction(null)}
+                          >
+                            Cancel
+                          </Button>
+                          <Button type="submit">Save Changes</Button>
+                        </DialogFooter>
+                      </form>
+                    )}
+                  </DialogContent>
+                </Dialog>
+                
+                <AlertDialog 
+                  open={deleteConfirmation === transaction.id}
+                  onOpenChange={(open) => !open && setDeleteConfirmation(null)}
+                >
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setDeleteConfirmation(transaction.id)}
+                    className="border-red-200 text-red-600 hover:bg-red-50"
+                  >
+                    <Trash2 className="h-3.5 w-3.5 mr-1" />
+                    Delete
+                  </Button>
+                  
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle className="flex items-center">
+                        <AlertTriangle className="h-5 w-5 text-red-500 mr-2" />
+                        Delete Transaction
+                      </AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to delete this transaction? This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel onClick={() => setDeleteConfirmation(null)}>
+                        Cancel
+                      </AlertDialogCancel>
+                      <AlertDialogAction 
+                        onClick={() => deleteTransaction(transaction.id)}
+                        className="bg-red-600 hover:bg-red-700"
+                      >
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+
+  const TransactionsTabContent = () => (
+    <TabsContent value="transactions">
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <CardTitle>User Transactions</CardTitle>
+          <Button variant="outline" onClick={handleDownloadCSV}>
+            <Download className="h-4 w-4 mr-2" />
+            Export
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {selectedUser ? (
+            transactions.length === 0 ? (
+              <div className="py-8 text-center">
+                <p className="text-gray-500">No transactions found for this user</p>
+              </div>
+            ) : (
+              renderTransactionsTable()
+            )
+          ) : (
+            <div className="py-8 text-center">
+              <p className="text-gray-500">Select a user to view their transactions</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </TabsContent>
+  );
 
   return (
     <div className="min-h-screen bg-gray-50 py-6">
@@ -377,67 +671,7 @@ const AdminDashboard = () => {
                 </Card>
               </TabsContent>
               
-              <TabsContent value="transactions">
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle>User Transactions</CardTitle>
-                    <Button variant="outline" onClick={handleDownloadCSV}>
-                      <Download className="h-4 w-4 mr-2" />
-                      Export
-                    </Button>
-                  </CardHeader>
-                  <CardContent>
-                    {selectedUser ? (
-                      transactions.length === 0 ? (
-                        <div className="py-8 text-center">
-                          <p className="text-gray-500">No transactions found for this user</p>
-                        </div>
-                      ) : (
-                        <div className="overflow-x-auto">
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead>Type</TableHead>
-                                <TableHead>Amount</TableHead>
-                                <TableHead>Recipient</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead>Date</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {transactions.map((transaction) => (
-                                <TableRow key={transaction.id}>
-                                  <TableCell className="capitalize">
-                                    {transaction.transaction_type}
-                                  </TableCell>
-                                  <TableCell>RWF {transaction.amount.toLocaleString()}</TableCell>
-                                  <TableCell>{transaction.recipient}</TableCell>
-                                  <TableCell>
-                                    <span 
-                                      className={`inline-block px-2 py-1 text-xs rounded-full ${
-                                        transaction.status === 'completed' 
-                                          ? 'bg-green-100 text-green-800' 
-                                          : 'bg-yellow-100 text-yellow-800'
-                                      }`}
-                                    >
-                                      {transaction.status}
-                                    </span>
-                                  </TableCell>
-                                  <TableCell>{formatDate(transaction.created_at)}</TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </div>
-                      )
-                    ) : (
-                      <div className="py-8 text-center">
-                        <p className="text-gray-500">Select a user to view their transactions</p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </TabsContent>
+              {TransactionsTabContent()}
             </Tabs>
           </div>
         )}

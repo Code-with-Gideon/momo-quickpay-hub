@@ -1,8 +1,16 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
+import { transactionService } from "@/utils/transactionService";
 
 interface MomoPayInputProps {
   onBack: () => void;
@@ -11,6 +19,24 @@ interface MomoPayInputProps {
 const MomoPayInput = ({ onBack }: MomoPayInputProps) => {
   const [code, setCode] = useState("");
   const [amount, setAmount] = useState("");
+  const [recentCodes, setRecentCodes] = useState<string[]>([]);
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  useEffect(() => {
+    // Get recent momopay codes from transactions
+    const sendTransactions = transactionService.getTransactionsByType("send");
+    const uniqueCodes = Array.from(new Set(
+      sendTransactions
+        .filter(t => 'to' in t && (t as any).isMomoPay)
+        .map(t => (t as any).to)
+    ));
+    setRecentCodes(uniqueCodes as string[]);
+  }, []);
+
+  const handleCodeSelect = (selected: string) => {
+    setCode(selected);
+    setShowDropdown(false);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,6 +55,18 @@ const MomoPayInput = ({ onBack }: MomoPayInputProps) => {
       toast.error("Please enter a valid amount");
       return;
     }
+
+    // Save transaction to history
+    const newTransaction = {
+      type: "send" as const,
+      to: code,
+      amount: `RWF ${amount}`,
+      date: "Today" as const,
+      isMomoPay: true,
+      timestamp: Date.now(),
+    };
+    
+    transactionService.saveTransaction(newTransaction);
 
     const ussdCode = `tel:*182*8*1*${code}*${amount}%23`;
     window.location.href = ussdCode;
@@ -50,14 +88,40 @@ const MomoPayInput = ({ onBack }: MomoPayInputProps) => {
           <label htmlFor="code" className="block text-sm font-medium text-gray-700 mb-1">
             MomoPay Code
           </label>
-          <Input
-            id="code"
-            type="text"
-            placeholder="Enter MomoPay code"
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-            className="w-full"
-          />
+          <div className="relative">
+            <Input
+              id="code"
+              type="text"
+              placeholder="Enter MomoPay code"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              className="w-full pr-10"
+            />
+            {recentCodes.length > 0 && (
+              <DropdownMenu open={showDropdown} onOpenChange={setShowDropdown}>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6"
+                  >
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-[200px]">
+                  {recentCodes.map((code, idx) => (
+                    <DropdownMenuItem 
+                      key={idx} 
+                      onClick={() => handleCodeSelect(code)}
+                      className="cursor-pointer"
+                    >
+                      {code}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
         </div>
 
         <div>
