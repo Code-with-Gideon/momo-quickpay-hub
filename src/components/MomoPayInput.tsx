@@ -1,32 +1,27 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
-import { transactionService } from "@/utils/transactionService";
-import { useAuth } from "@/contexts/AuthContext";
 
 interface MomoPayInputProps {
   onBack: () => void;
 }
 
 const MomoPayInput = ({ onBack }: MomoPayInputProps) => {
-  const [momoCode, setMomoCode] = useState("");
+  const [code, setCode] = useState("");
   const [amount, setAmount] = useState("");
-  const { user } = useAuth();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!momoCode || !amount) {
+    if (!code || !amount) {
       toast.error("Please fill in all fields");
       return;
     }
 
-    // Validate MoMo Pay code format (typically 6 digits)
-    if (!/^\d{6}$/.test(momoCode)) {
-      toast.error("Please enter a valid MoMo Pay code (6 digits)");
+    if (!/^\d+$/.test(code)) {
+      toast.error("Please enter a valid MomoPay code");
       return;
     }
 
@@ -35,22 +30,7 @@ const MomoPayInput = ({ onBack }: MomoPayInputProps) => {
       return;
     }
 
-    // Save transaction to history
-    const newTransaction = {
-      type: "send" as const,
-      to: `MoMo Pay (${momoCode})`,
-      amount: `RWF ${amount}`,
-      date: "Today" as const,
-      isMomoPay: true,
-      timestamp: Date.now(),
-      userId: user?.id || 'anonymous'
-    };
-    
-    transactionService.saveTransaction(newTransaction);
-
-    // In real app, this would be integrated with mobile money API
-    // For demo, simulate with USSD code for MoMo Pay
-    const ussdCode = `tel:*182*8*1*${momoCode}*${amount}%23`;
+    const ussdCode = `tel:*182*8*1*${code}*${amount}%23`;
     window.location.href = ussdCode;
   };
 
@@ -67,17 +47,16 @@ const MomoPayInput = ({ onBack }: MomoPayInputProps) => {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label htmlFor="momoCode" className="block text-sm font-medium text-gray-700 mb-1">
-            MoMo Pay Code
+          <label htmlFor="code" className="block text-sm font-medium text-gray-700 mb-1">
+            MomoPay Code
           </label>
           <Input
-            id="momoCode"
+            id="code"
             type="text"
-            placeholder="Enter 6-digit code"
-            value={momoCode}
-            onChange={(e) => setMomoCode(e.target.value)}
+            placeholder="Enter MomoPay code"
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
             className="w-full"
-            maxLength={6}
           />
         </div>
 
@@ -99,7 +78,7 @@ const MomoPayInput = ({ onBack }: MomoPayInputProps) => {
           type="submit"
           className="w-full bg-mtn-yellow hover:bg-mtn-yellow/90 text-mtn-blue"
         >
-          Continue to Payment
+          Pay with MomoPay
         </Button>
       </form>
     </div>

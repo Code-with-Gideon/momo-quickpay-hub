@@ -35,8 +35,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    console.log("AuthProvider useEffect running");
-    
     // Handle hash fragments from password reset links on initial load
     const handleHashParams = async () => {
       const hash = window.location.hash;
@@ -73,25 +71,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Process hash parameters first
     handleHashParams();
     
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
-      console.log("Auth state changed:", event, newSession ? "session exists" : "no session");
-      setSession(newSession);
-      setUser(newSession?.user || null);
-      checkAdminStatus(newSession?.user?.email || "");
-      setIsLoading(false);
-
-      // Also fetch profile data if user is authenticated
-      if (newSession?.user) {
-        fetchProfileData(newSession.user.id);
-      }
-    });
-
-    // THEN check for existing session
+    // Fetch the initial session
     const fetchSession = async () => {
-      console.log("Fetching initial session");
       const { data } = await supabase.auth.getSession();
-      console.log("Initial session:", data.session ? "exists" : "none");
       setSession(data.session);
       setUser(data.session?.user || null);
       checkAdminStatus(data.session?.user?.email || "");
@@ -104,6 +86,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     fetchSession();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
+      setSession(newSession);
+      setUser(newSession?.user || null);
+      checkAdminStatus(newSession?.user?.email || "");
+      setIsLoading(false);
+
+      // Also fetch profile data if user is authenticated
+      if (newSession?.user) {
+        fetchProfileData(newSession.user.id);
+      }
+    });
 
     return () => {
       subscription.unsubscribe();

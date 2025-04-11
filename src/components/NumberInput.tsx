@@ -1,17 +1,8 @@
-
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, ChevronDown } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
-} from "@/components/ui/dropdown-menu";
-import { transactionService } from "@/utils/transactionService";
-import { useAuth } from "@/contexts/AuthContext";
 
 interface NumberInputProps {
   onBack: () => void;
@@ -20,25 +11,6 @@ interface NumberInputProps {
 const NumberInput = ({ onBack }: NumberInputProps) => {
   const [number, setNumber] = useState("");
   const [amount, setAmount] = useState("");
-  const [recentNumbers, setRecentNumbers] = useState<string[]>([]);
-  const [showDropdown, setShowDropdown] = useState(false);
-  const { user } = useAuth();
-
-  useEffect(() => {
-    // Get recent airtime numbers
-    const transactions = transactionService.getTransactionsByType("airtime");
-    const uniqueNumbers = Array.from(new Set(
-      transactions
-        .filter(t => 'phoneNumber' in t)
-        .map(t => (t as any).phoneNumber)
-    ));
-    setRecentNumbers(uniqueNumbers as string[]);
-  }, []);
-
-  const handleNumberSelect = (selected: string) => {
-    setNumber(selected);
-    setShowDropdown(false);
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,18 +29,6 @@ const NumberInput = ({ onBack }: NumberInputProps) => {
       toast.error("Please enter a valid amount");
       return;
     }
-
-    // Save transaction to history
-    const newTransaction = {
-      type: "airtime" as const,
-      phoneNumber: number,
-      amount: `RWF ${amount}`,
-      date: "Today" as const,
-      timestamp: Date.now(),
-      userId: user?.id || 'anonymous'
-    };
-    
-    transactionService.saveTransaction(newTransaction);
 
     const ussdCode = `tel:*182*1*1*${number}*${amount}%23`;
     window.location.href = ussdCode;
@@ -90,40 +50,14 @@ const NumberInput = ({ onBack }: NumberInputProps) => {
           <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
             Phone Number
           </label>
-          <div className="relative">
-            <Input
-              id="phone"
-              type="tel"
-              placeholder="07xxxxxxxx"
-              value={number}
-              onChange={(e) => setNumber(e.target.value)}
-              className="w-full pr-10"
-            />
-            {recentNumbers.length > 0 && (
-              <DropdownMenu open={showDropdown} onOpenChange={setShowDropdown}>
-                <DropdownMenuTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6"
-                  >
-                    <ChevronDown className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-[200px]">
-                  {recentNumbers.map((num, idx) => (
-                    <DropdownMenuItem 
-                      key={idx} 
-                      onClick={() => handleNumberSelect(num)}
-                      className="cursor-pointer"
-                    >
-                      {num}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-          </div>
+          <Input
+            id="phone"
+            type="tel"
+            placeholder="07xxxxxxxx"
+            value={number}
+            onChange={(e) => setNumber(e.target.value)}
+            className="w-full"
+          />
         </div>
 
         <div>
