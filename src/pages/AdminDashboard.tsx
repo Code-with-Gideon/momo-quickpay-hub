@@ -126,17 +126,24 @@ const AdminDashboard = () => {
   const fetchUserTransactions = async () => {
     if (!selectedUser) return;
     
-    const { data, error } = await supabase
-      .from('admin_transaction_view')
-      .select('*')
-      .eq('user_id', selectedUser)
-      .order('created_at', { ascending: false });
+    console.log("Fetching transactions for user:", selectedUser);
+    
+    try {
+      const { data, error } = await supabase
+        .from('admin_transaction_view')
+        .select('*')
+        .eq('user_id', selectedUser)
+        .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('Error fetching user transactions:', error);
-      toast.error("Failed to load transactions");
-    } else if (data) {
-      setTransactions(data as TransactionType[]);
+      if (error) {
+        console.error('Error fetching user transactions:', error);
+        toast.error("Failed to load transactions");
+      } else if (data) {
+        console.log("Transactions fetched:", data);
+        setTransactions(data as TransactionType[]);
+      }
+    } catch (err) {
+      console.error("Exception when fetching transactions:", err);
     }
   };
 
@@ -187,6 +194,7 @@ const AdminDashboard = () => {
   };
 
   const handleEditTransaction = (transaction: TransactionType) => {
+    console.log("Editing transaction:", transaction);
     setEditingTransaction(transaction);
     setEditAmount(transaction.amount.toString());
     setEditRecipient(transaction.recipient);
@@ -198,8 +206,16 @@ const AdminDashboard = () => {
   const handleSaveEdit = async () => {
     if (!editingTransaction) return;
     
+    console.log("Saving edited transaction:", {
+      id: editingTransaction.id,
+      amount: parseFloat(editAmount),
+      recipient: editRecipient,
+      description: editDescription,
+      status: editStatus
+    });
+    
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('transactions')
         .update({
           amount: parseFloat(editAmount),
@@ -207,14 +223,17 @@ const AdminDashboard = () => {
           description: editDescription || null,
           status: editStatus
         })
-        .eq('id', editingTransaction.id);
+        .eq('id', editingTransaction.id)
+        .select();
+      
+      console.log("Update response:", { data, error });
 
       if (error) {
         console.error('Error updating transaction:', error);
         toast.error("Failed to update transaction: " + error.message);
       } else {
         toast.success("Transaction updated successfully");
-        fetchUserTransactions();
+        await fetchUserTransactions();
         setIsEditDialogOpen(false);
       }
     } catch (error: any) {
@@ -228,18 +247,23 @@ const AdminDashboard = () => {
       return;
     }
     
+    console.log("Deleting transaction:", transactionId);
+    
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('transactions')
         .delete()
-        .eq('id', transactionId);
+        .eq('id', transactionId)
+        .select();
+      
+      console.log("Delete response:", { data, error });
 
       if (error) {
         console.error('Error deleting transaction:', error);
         toast.error("Failed to delete transaction: " + error.message);
       } else {
         toast.success("Transaction deleted successfully");
-        fetchUserTransactions();
+        await fetchUserTransactions();
       }
     } catch (error: any) {
       console.error('Error deleting transaction:', error);

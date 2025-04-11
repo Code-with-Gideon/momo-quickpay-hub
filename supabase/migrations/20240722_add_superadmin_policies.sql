@@ -24,6 +24,18 @@ CREATE POLICY "Superadmins can view all profiles"
   FOR SELECT 
   USING (public.is_superadmin());
 
+-- Allow superadmins to update transactions
+CREATE POLICY "Superadmins can update transactions" 
+  ON public.transactions
+  FOR UPDATE 
+  USING (public.is_superadmin());
+
+-- Allow superadmins to delete transactions
+CREATE POLICY "Superadmins can delete transactions" 
+  ON public.transactions
+  FOR DELETE 
+  USING (public.is_superadmin());
+
 -- Create a view that joins transactions with user profiles for easy admin access
 CREATE OR REPLACE VIEW public.admin_transaction_view AS
 SELECT 

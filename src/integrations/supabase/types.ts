@@ -69,21 +69,6 @@ export type Database = {
         }
         Relationships: []
       }
-      "Users Transaction": {
-        Row: {
-          created_at: string
-          id: number
-        }
-        Insert: {
-          created_at?: string
-          id?: number
-        }
-        Update: {
-          created_at?: string
-          id?: number
-        }
-        Relationships: []
-      }
     }
     Views: {
       admin_transaction_view: {
