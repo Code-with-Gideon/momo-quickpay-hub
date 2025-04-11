@@ -8,8 +8,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Search, Download, ChevronLeft, ChevronRight, BarChart, Users } from "lucide-react";
+import { Search, Download, ChevronLeft, ChevronRight, BarChart, Users, Pencil, Trash2, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 
 interface UserType {
   id: string;
@@ -46,6 +48,12 @@ const AdminDashboard = () => {
   const [totalUsers, setTotalUsers] = useState(0);
   const [totalTransactions, setTotalTransactions] = useState(0);
   const [totalAmount, setTotalAmount] = useState(0);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingTransaction, setEditingTransaction] = useState<TransactionType | null>(null);
+  const [editAmount, setEditAmount] = useState("");
+  const [editRecipient, setEditRecipient] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editStatus, setEditStatus] = useState("");
   const itemsPerPage = 10;
 
   useEffect(() => {
@@ -116,25 +124,28 @@ const AdminDashboard = () => {
   // Fetch user transactions when a user is selected
   useEffect(() => {
     if (selectedUser) {
-      const fetchUserTransactions = async () => {
-        const { data, error } = await supabase
-          .from('admin_transaction_view')
-          .select('*')
-          .eq('user_id', selectedUser)
-          .order('created_at', { ascending: false });
-
-        if (error) {
-          console.error('Error fetching user transactions:', error);
-        } else if (data) {
-          setTransactions(data as TransactionType[]);
-        }
-      };
-
       fetchUserTransactions();
     } else {
       setTransactions([]);
     }
   }, [selectedUser]);
+
+  const fetchUserTransactions = async () => {
+    if (!selectedUser) return;
+    
+    const { data, error } = await supabase
+      .from('admin_transaction_view')
+      .select('*')
+      .eq('user_id', selectedUser)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching user transactions:', error);
+      toast.error("Failed to load transactions");
+    } else if (data) {
+      setTransactions(data as TransactionType[]);
+    }
+  };
 
   const handleUserSelect = (userId: string) => {
     setSelectedUser(userId === selectedUser ? null : userId);
@@ -181,6 +192,67 @@ const AdminDashboard = () => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  const handleEditTransaction = (transaction: TransactionType) => {
+    setEditingTransaction(transaction);
+    setEditAmount(transaction.amount.toString());
+    setEditRecipient(transaction.recipient);
+    setEditDescription(transaction.description || '');
+    setEditStatus(transaction.status);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingTransaction) return;
+    
+    try {
+      const { error } = await supabase
+        .from('transactions')
+        .update({
+          amount: parseFloat(editAmount),
+          recipient: editRecipient,
+          description: editDescription || null,
+          status: editStatus
+        })
+        .eq('id', editingTransaction.id);
+
+      if (error) {
+        console.error('Error updating transaction:', error);
+        toast.error("Failed to update transaction");
+      } else {
+        toast.success("Transaction updated successfully");
+        fetchUserTransactions();
+        setIsEditDialogOpen(false);
+      }
+    } catch (error) {
+      console.error('Error updating transaction:', error);
+      toast.error("Failed to update transaction");
+    }
+  };
+
+  const handleDeleteTransaction = async (transactionId: string) => {
+    if (!confirm("Are you sure you want to delete this transaction? This action cannot be undone.")) {
+      return;
+    }
+    
+    try {
+      const { error } = await supabase
+        .from('transactions')
+        .delete()
+        .eq('id', transactionId);
+
+      if (error) {
+        console.error('Error deleting transaction:', error);
+        toast.error("Failed to delete transaction");
+      } else {
+        toast.success("Transaction deleted successfully");
+        fetchUserTransactions();
+      }
+    } catch (error) {
+      console.error('Error deleting transaction:', error);
+      toast.error("Failed to delete transaction");
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -402,6 +474,7 @@ const AdminDashboard = () => {
                                 <TableHead>Recipient</TableHead>
                                 <TableHead>Status</TableHead>
                                 <TableHead>Date</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -424,6 +497,25 @@ const AdminDashboard = () => {
                                     </span>
                                   </TableCell>
                                   <TableCell>{formatDate(transaction.created_at)}</TableCell>
+                                  <TableCell className="text-right">
+                                    <div className="flex justify-end gap-2">
+                                      <Button 
+                                        variant="outline" 
+                                        size="icon"
+                                        onClick={() => handleEditTransaction(transaction)}
+                                      >
+                                        <Pencil className="h-4 w-4" />
+                                      </Button>
+                                      <Button 
+                                        variant="outline" 
+                                        size="icon"
+                                        onClick={() => handleDeleteTransaction(transaction.id)}
+                                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                  </TableCell>
                                 </TableRow>
                               ))}
                             </TableBody>
@@ -442,6 +534,73 @@ const AdminDashboard = () => {
           </div>
         )}
       </div>
+
+      {/* Edit Transaction Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Edit Transaction</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <label htmlFor="amount" className="text-right text-sm">
+                Amount
+              </label>
+              <Input
+                id="amount"
+                type="number"
+                value={editAmount}
+                onChange={(e) => setEditAmount(e.target.value)}
+                className="col-span-3"
+                min="100"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <label htmlFor="recipient" className="text-right text-sm">
+                Recipient
+              </label>
+              <Input
+                id="recipient"
+                value={editRecipient}
+                onChange={(e) => setEditRecipient(e.target.value)}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <label htmlFor="description" className="text-right text-sm">
+                Description
+              </label>
+              <Input
+                id="description"
+                value={editDescription}
+                onChange={(e) => setEditDescription(e.target.value)}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <label htmlFor="status" className="text-right text-sm">
+                Status
+              </label>
+              <select
+                id="status"
+                value={editStatus}
+                onChange={(e) => setEditStatus(e.target.value)}
+                className="col-span-3 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <option value="completed">Completed</option>
+                <option value="pending">Pending</option>
+                <option value="failed">Failed</option>
+              </select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveEdit}>Save changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

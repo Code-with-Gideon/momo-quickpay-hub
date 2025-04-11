@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,6 +33,12 @@ const MomoPayInput = ({ onBack, onTransactionComplete }: MomoPayInputProps) => {
 
     if (!/^\d+$/.test(amount)) {
       toast.error("Please enter a valid amount");
+      return;
+    }
+
+    // Add minimum amount validation (100 RWF)
+    if (parseInt(amount) < 100) {
+      toast.error("Minimum transaction amount is 100 RWF");
       return;
     }
 

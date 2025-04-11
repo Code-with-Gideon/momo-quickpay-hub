@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { ArrowLeft, QrCode, User2, Send, Star, Store } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -37,9 +36,7 @@ const SendMoneyView = ({ onBack, onTransactionComplete }: SendMoneyViewProps) =>
   const { user } = useAuth();
   const { addTransaction, transactions } = useTransactions();
 
-  // Load transactions from both local storage and the transactions hook
   useEffect(() => {
-    // Load from local storage for backward compatibility
     const stored = localStorage.getItem("send_money_history");
     let storedTransactions: StoredTransaction[] = [];
     
@@ -51,7 +48,6 @@ const SendMoneyView = ({ onBack, onTransactionComplete }: SendMoneyViewProps) =>
       }
     }
     
-    // Convert transactions from the hook to the format used in this component
     const hookTransactions = transactions
       .filter(t => t.type === "send")
       .map((t: Transaction) => {
@@ -70,10 +66,8 @@ const SendMoneyView = ({ onBack, onTransactionComplete }: SendMoneyViewProps) =>
       })
       .filter(Boolean) as StoredTransaction[];
     
-    // Merge transactions, preferring hook transactions over stored ones
     const mergedTransactions = [...storedTransactions];
     
-    // Add hook transactions if they don't exist in storedTransactions
     hookTransactions.forEach(hookTx => {
       const exists = storedTransactions.some(
         storedTx => storedTx.phoneNumber === hookTx.phoneNumber && 
@@ -86,7 +80,6 @@ const SendMoneyView = ({ onBack, onTransactionComplete }: SendMoneyViewProps) =>
       }
     });
     
-    // Sort by timestamp, newest first
     mergedTransactions.sort((a, b) => {
       return (b.timestamp || 0) - (a.timestamp || 0);
     });
@@ -117,7 +110,6 @@ const SendMoneyView = ({ onBack, onTransactionComplete }: SendMoneyViewProps) =>
       return transaction;
     });
     
-    // Update local storage
     localStorage.setItem("send_money_history", JSON.stringify(updatedTransactions));
     setRecentTransactions(updatedTransactions);
     
@@ -153,6 +145,11 @@ const SendMoneyView = ({ onBack, onTransactionComplete }: SendMoneyViewProps) =>
     }
     if (!/^\d+$/.test(amount)) {
       toast.error("Please enter a valid amount");
+      return;
+    }
+    
+    if (parseInt(amount) < 100) {
+      toast.error("Minimum transaction amount is 100 RWF");
       return;
     }
 
