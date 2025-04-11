@@ -1,8 +1,9 @@
-import { Auth } from "@/pages/Auth";
-import { Dashboard } from "@/pages/Dashboard";
-import { AdminDashboard } from "@/pages/AdminDashboard";
-import { Receipt } from "@/pages/Receipt";
-import { FeedbackForm } from "@/pages/FeedbackForm";
+
+import Auth from "@/pages/Auth";
+import Dashboard from "@/pages/Dashboard";
+import AdminDashboard from "@/pages/AdminDashboard";
+import Receipt from "@/pages/Receipt";
+import FeedbackForm from "@/components/FeedbackForm";
 import {
   BrowserRouter as Router,
   Routes,
@@ -19,9 +20,9 @@ const ProtectedRoute = ({
   children: React.ReactNode;
   adminOnly?: boolean;
 }) => {
-  const { user, isAdmin, loading } = useAuth();
+  const { user, isAdmin, isLoading } = useAuth();
 
-  if (loading) {
+  if (isLoading) {
     return <div>Loading...</div>;
   }
 

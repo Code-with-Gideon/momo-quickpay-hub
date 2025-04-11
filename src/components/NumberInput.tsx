@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
 import { transactionService } from "@/utils/transactionService";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface NumberInputProps {
   onBack: () => void;
@@ -21,6 +22,7 @@ const NumberInput = ({ onBack }: NumberInputProps) => {
   const [amount, setAmount] = useState("");
   const [recentNumbers, setRecentNumbers] = useState<string[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
+  const { user } = useAuth();
 
   useEffect(() => {
     // Get recent airtime numbers
@@ -63,6 +65,7 @@ const NumberInput = ({ onBack }: NumberInputProps) => {
       amount: `RWF ${amount}`,
       date: "Today" as const,
       timestamp: Date.now(),
+      userId: user?.id || 'anonymous'
     };
     
     transactionService.saveTransaction(newTransaction);
