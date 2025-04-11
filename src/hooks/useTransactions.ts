@@ -9,6 +9,7 @@ interface UseTransactionsOptions {
   type?: "send" | "airtime" | "data";
   recentDays?: number;
   refreshInterval?: number;
+  isAdmin?: boolean;
 }
 
 export function useTransactions(options: UseTransactionsOptions = {}) {
@@ -27,7 +28,7 @@ export function useTransactions(options: UseTransactionsOptions = {}) {
           let query;
           
           // If user is admin and no specific userId was requested, fetch all transactions
-          if (isAdmin && !options.userId) {
+          if ((isAdmin || options.isAdmin) && !options.userId) {
             // Admins get access to all transactions
             query = supabase.from('admin_transaction_view').select('*');
           } else {
@@ -186,7 +187,7 @@ export function useTransactions(options: UseTransactionsOptions = {}) {
         subscription.unsubscribe();
       }
     };
-  }, [options.userId, options.type, options.recentDays, options.refreshInterval, user, isAdmin]);
+  }, [options.userId, options.type, options.recentDays, options.refreshInterval, options.isAdmin, user, isAdmin]);
 
   // Function to add a new transaction
   const addTransaction = async (transaction: Omit<Transaction, 'timestamp' | 'userId'> & { timestamp?: number, userId?: string }) => {
@@ -204,7 +205,7 @@ export function useTransactions(options: UseTransactionsOptions = {}) {
         
         // Map local transaction format to Supabase format
         const supabaseTransaction = {
-          user_id: user.id,
+          user_id: transaction.userId || user.id,
           amount: parseFloat(transaction.amount.replace(/[^0-9.]/g, "")),
           transaction_type: transaction.type,
           recipient: transaction.type === 'send' 
@@ -249,11 +250,76 @@ export function useTransactions(options: UseTransactionsOptions = {}) {
     }
   };
 
+  // Function to update an existing transaction (admin only)
+  const updateTransaction = async (id: string, updates: any) => {
+    if (!isAdmin && !options.isAdmin) {
+      console.error('Only admins can update transactions');
+      return null;
+    }
+
+    try {
+      console.log('Updating transaction:', id, updates);
+      const { data, error } = await supabase
+        .from('transactions')
+        .update(updates)
+        .eq('id', id)
+        .select();
+      
+      if (error) {
+        console.error('Error updating transaction:', error);
+        throw error;
+      }
+      
+      console.log('Transaction updated successfully:', data);
+      
+      // Refresh transactions after update
+      await refreshTransactions();
+      
+      return data[0];
+    } catch (error) {
+      console.error('Failed to update transaction:', error);
+      throw error;
+    }
+  };
+
+  // Function to delete a transaction (admin only)
+  const deleteTransaction = async (id: string) => {
+    if (!isAdmin && !options.isAdmin) {
+      console.error('Only admins can delete transactions');
+      return false;
+    }
+
+    try {
+      console.log('Deleting transaction:', id);
+      const { error } = await supabase
+        .from('transactions')
+        .delete()
+        .eq('id', id);
+      
+      if (error) {
+        console.error('Error deleting transaction:', error);
+        throw error;
+      }
+      
+      console.log('Transaction deleted successfully');
+      
+      // Refresh transactions after deletion
+      await refreshTransactions();
+      
+      return true;
+    } catch (error) {
+      console.error('Failed to delete transaction:', error);
+      throw error;
+    }
+  };
+
   return {
     transactions,
     isLoading,
     addTransaction,
-    refreshTransactions: () => {
+    updateTransaction,
+    deleteTransaction,
+    refreshTransactions: async () => {
       // Will trigger the useEffect to reload from Supabase or localStorage
       setIsLoading(true);
     },

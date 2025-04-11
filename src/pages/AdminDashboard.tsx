@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -7,10 +8,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Search, Download, ChevronLeft, ChevronRight, BarChart, Users, Pencil, Trash2, X } from "lucide-react";
+import { Search, Download, ChevronLeft, ChevronRight, BarChart, Users, Pencil, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { useTransactions } from "@/hooks/useTransactions";
 
 interface UserType {
   id: string;
@@ -39,8 +41,7 @@ const AdminDashboard = () => {
   const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [users, setUsers] = useState<UserType[]>([]);
-  const [transactions, setTransactions] = useState<TransactionType[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(true);
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -54,6 +55,19 @@ const AdminDashboard = () => {
   const [editDescription, setEditDescription] = useState("");
   const [editStatus, setEditStatus] = useState("");
   const itemsPerPage = 10;
+  
+  // Use our enhanced useTransactions hook for all transaction-related operations
+  const { 
+    transactions, 
+    isLoading: isLoadingTransactions, 
+    updateTransaction, 
+    deleteTransaction, 
+    refreshTransactions 
+  } = useTransactions({ 
+    userId: selectedUser || undefined,
+    isAdmin: true,
+    refreshInterval: 0 // Don't auto-refresh
+  });
 
   useEffect(() => {
     if (!isAdmin) {
@@ -62,7 +76,7 @@ const AdminDashboard = () => {
     }
 
     const fetchData = async () => {
-      setIsLoading(true);
+      setIsLoadingUsers(true);
       try {
         const { data: transData, error: transError } = await supabase
           .from('admin_transaction_view')
@@ -108,44 +122,12 @@ const AdminDashboard = () => {
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
-        setIsLoading(false);
+        setIsLoadingUsers(false);
       }
     };
 
     fetchData();
   }, [isAdmin, navigate, currentPage, searchTerm]);
-
-  useEffect(() => {
-    if (selectedUser) {
-      fetchUserTransactions();
-    } else {
-      setTransactions([]);
-    }
-  }, [selectedUser]);
-
-  const fetchUserTransactions = async () => {
-    if (!selectedUser) return;
-    
-    console.log("Fetching transactions for user:", selectedUser);
-    
-    try {
-      const { data, error } = await supabase
-        .from('admin_transaction_view')
-        .select('*')
-        .eq('user_id', selectedUser)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching user transactions:', error);
-        toast.error("Failed to load transactions");
-      } else if (data) {
-        console.log("Transactions fetched:", data);
-        setTransactions(data as TransactionType[]);
-      }
-    } catch (err) {
-      console.error("Exception when fetching transactions:", err);
-    }
-  };
 
   const handleUserSelect = (userId: string) => {
     setSelectedUser(userId === selectedUser ? null : userId);
@@ -160,7 +142,7 @@ const AdminDashboard = () => {
     const csvData = selectedUser ? 
       [
         ['ID', 'Type', 'Amount', 'Recipient', 'Description', 'Status', 'Date'],
-        ...transactions.map(t => [
+        ...transactions.map((t: any) => [
           t.id,
           t.transaction_type,
           t.amount,
@@ -206,36 +188,22 @@ const AdminDashboard = () => {
   const handleSaveEdit = async () => {
     if (!editingTransaction) return;
     
-    console.log("Saving edited transaction:", {
-      id: editingTransaction.id,
+    const updates = {
       amount: parseFloat(editAmount),
       recipient: editRecipient,
-      description: editDescription,
+      description: editDescription || null,
       status: editStatus
+    };
+    
+    console.log("Saving edited transaction:", {
+      id: editingTransaction.id,
+      ...updates
     });
     
     try {
-      const { data, error } = await supabase
-        .from('transactions')
-        .update({
-          amount: parseFloat(editAmount),
-          recipient: editRecipient,
-          description: editDescription || null,
-          status: editStatus
-        })
-        .eq('id', editingTransaction.id)
-        .select();
-      
-      console.log("Update response:", { data, error });
-
-      if (error) {
-        console.error('Error updating transaction:', error);
-        toast.error("Failed to update transaction: " + error.message);
-      } else {
-        toast.success("Transaction updated successfully");
-        await fetchUserTransactions();
-        setIsEditDialogOpen(false);
-      }
+      await updateTransaction(editingTransaction.id, updates);
+      toast.success("Transaction updated successfully");
+      setIsEditDialogOpen(false);
     } catch (error: any) {
       console.error('Error updating transaction:', error);
       toast.error("Failed to update transaction: " + (error.message || "Unknown error"));
@@ -250,21 +218,8 @@ const AdminDashboard = () => {
     console.log("Deleting transaction:", transactionId);
     
     try {
-      const { data, error } = await supabase
-        .from('transactions')
-        .delete()
-        .eq('id', transactionId)
-        .select();
-      
-      console.log("Delete response:", { data, error });
-
-      if (error) {
-        console.error('Error deleting transaction:', error);
-        toast.error("Failed to delete transaction: " + error.message);
-      } else {
-        toast.success("Transaction deleted successfully");
-        await fetchUserTransactions();
-      }
+      await deleteTransaction(transactionId);
+      toast.success("Transaction deleted successfully");
     } catch (error: any) {
       console.error('Error deleting transaction:', error);
       toast.error("Failed to delete transaction: " + (error.message || "Unknown error"));
@@ -278,6 +233,21 @@ const AdminDashboard = () => {
       day: 'numeric' 
     });
   };
+
+  // Map the transactions from the hook format to the format expected by the component
+  const transactionsList = transactions.map((t: any) => ({
+    id: t.id || t.userId + t.timestamp,
+    user_id: t.userId,
+    display_name: t.displayName,
+    email: t.email,
+    phone_number: t.phoneNumber,
+    amount: parseFloat(t.amount.replace(/[^0-9.]/g, "")),
+    transaction_type: t.type,
+    recipient: t.type === 'send' ? t.to : (t.phoneNumber || ''),
+    description: t.type === 'data' ? t.dataPackage : null,
+    status: 'completed',
+    created_at: new Date(t.timestamp).toISOString()
+  })) as TransactionType[];
 
   return (
     <div className="min-h-screen bg-gray-50 py-6">
@@ -353,7 +323,7 @@ const AdminDashboard = () => {
               <TabsList>
                 <TabsTrigger value="users">Users</TabsTrigger>
                 <TabsTrigger value="transactions" disabled={!selectedUser}>
-                  User Transactions {selectedUser ? `(${transactions.length})` : ''}
+                  User Transactions {selectedUser ? `(${transactionsList.length})` : ''}
                 </TabsTrigger>
               </TabsList>
               
@@ -380,7 +350,7 @@ const AdminDashboard = () => {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    {isLoading ? (
+                    {isLoadingUsers ? (
                       <div className="py-8 text-center">
                         <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#070058] mx-auto"></div>
                         <p className="mt-2 text-gray-500">Loading users...</p>
@@ -474,7 +444,12 @@ const AdminDashboard = () => {
                   </CardHeader>
                   <CardContent>
                     {selectedUser ? (
-                      transactions.length === 0 ? (
+                      isLoadingTransactions ? (
+                        <div className="py-8 text-center">
+                          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#070058] mx-auto"></div>
+                          <p className="mt-2 text-gray-500">Loading transactions...</p>
+                        </div>
+                      ) : transactionsList.length === 0 ? (
                         <div className="py-8 text-center">
                           <p className="text-gray-500">No transactions found for this user</p>
                         </div>
@@ -492,7 +467,7 @@ const AdminDashboard = () => {
                               </TableRow>
                             </TableHeader>
                             <TableBody>
-                              {transactions.map((transaction) => (
+                              {transactionsList.map((transaction) => (
                                 <TableRow key={transaction.id}>
                                   <TableCell className="capitalize">
                                     {transaction.transaction_type}

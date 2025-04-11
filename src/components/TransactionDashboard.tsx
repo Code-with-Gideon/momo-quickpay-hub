@@ -28,7 +28,8 @@ const TransactionDashboard = ({ userId, isAdmin }: TransactionDashboardProps) =>
     addTransaction, 
     refreshTransactions 
   } = useTransactions({ 
-    userId: userId 
+    userId: userId,
+    isAdmin: isAdmin
   });
 
   // Function to handle successful transaction completion
