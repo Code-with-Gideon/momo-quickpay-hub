@@ -113,7 +113,7 @@ const Auth = () => {
         throw error;
       }
       
-      navigate("/index");
+      navigate("/dashboard");
     } catch (error: any) {
       toast({
         title: "Error",
