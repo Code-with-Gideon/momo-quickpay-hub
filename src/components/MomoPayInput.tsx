@@ -110,6 +110,7 @@ const MomoPayInput = ({ onBack, onTransactionComplete }: MomoPayInputProps) => {
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             className="w-full"
+            min="100"
           />
         </div>
 

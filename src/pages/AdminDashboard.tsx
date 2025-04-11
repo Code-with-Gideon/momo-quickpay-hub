@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -65,7 +64,6 @@ const AdminDashboard = () => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        // Fetch summary statistics
         const { data: transData, error: transError } = await supabase
           .from('admin_transaction_view')
           .select('*');
@@ -74,16 +72,13 @@ const AdminDashboard = () => {
           console.error('Error fetching transactions:', transError);
         } else if (transData) {
           setTotalTransactions(transData.length);
-          // Calculate total amount from all transactions
           const total = transData.reduce((sum, trans) => sum + (trans.amount || 0), 0);
           setTotalAmount(total);
         }
 
-        // Fetch paginated users with profiles
         const from = (currentPage - 1) * itemsPerPage;
         const to = from + itemsPerPage - 1;
 
-        // Get total count first
         const { count } = await supabase
           .from('profiles')
           .select('*', { count: 'exact', head: true })
@@ -91,7 +86,6 @@ const AdminDashboard = () => {
 
         setTotalUsers(count || 0);
 
-        // Then fetch the page of data
         const { data: userData, error: userError } = await supabase
           .from('profiles')
           .select(`
@@ -121,7 +115,6 @@ const AdminDashboard = () => {
     fetchData();
   }, [isAdmin, navigate, currentPage, searchTerm]);
 
-  // Fetch user transactions when a user is selected
   useEffect(() => {
     if (selectedUser) {
       fetchUserTransactions();
@@ -153,11 +146,10 @@ const AdminDashboard = () => {
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
-    setCurrentPage(1); // Reset to first page when search changes
+    setCurrentPage(1);
   };
 
   const handleDownloadCSV = () => {
-    // Function to generate and download CSV of current data
     const csvData = selectedUser ? 
       [
         ['ID', 'Type', 'Amount', 'Recipient', 'Description', 'Status', 'Date'],
@@ -219,15 +211,15 @@ const AdminDashboard = () => {
 
       if (error) {
         console.error('Error updating transaction:', error);
-        toast.error("Failed to update transaction");
+        toast.error("Failed to update transaction: " + error.message);
       } else {
         toast.success("Transaction updated successfully");
         fetchUserTransactions();
         setIsEditDialogOpen(false);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating transaction:', error);
-      toast.error("Failed to update transaction");
+      toast.error("Failed to update transaction: " + (error.message || "Unknown error"));
     }
   };
 
@@ -244,14 +236,14 @@ const AdminDashboard = () => {
 
       if (error) {
         console.error('Error deleting transaction:', error);
-        toast.error("Failed to delete transaction");
+        toast.error("Failed to delete transaction: " + error.message);
       } else {
         toast.success("Transaction deleted successfully");
         fetchUserTransactions();
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting transaction:', error);
-      toast.error("Failed to delete transaction");
+      toast.error("Failed to delete transaction: " + (error.message || "Unknown error"));
     }
   };
 
@@ -284,7 +276,6 @@ const AdminDashboard = () => {
           </Card>
         ) : (
           <div className="space-y-6">
-            {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
               <Card>
                 <CardHeader className="pb-2">
@@ -414,7 +405,6 @@ const AdminDashboard = () => {
                           </Table>
                         </div>
                         
-                        {/* Pagination */}
                         <div className="flex items-center justify-between mt-4">
                           <p className="text-sm text-gray-500">
                             Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
@@ -535,7 +525,6 @@ const AdminDashboard = () => {
         )}
       </div>
 
-      {/* Edit Transaction Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
