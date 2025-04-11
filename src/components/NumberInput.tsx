@@ -3,16 +3,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
+import { useTransactions } from "@/hooks/useTransactions";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface NumberInputProps {
   onBack: () => void;
+  onTransactionComplete?: (transaction: any) => Promise<void>;
 }
 
-const NumberInput = ({ onBack }: NumberInputProps) => {
+const NumberInput = ({ onBack, onTransactionComplete }: NumberInputProps) => {
   const [number, setNumber] = useState("");
   const [amount, setAmount] = useState("");
+  const { user } = useAuth();
+  const { addTransaction } = useTransactions();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!number || !amount) {
@@ -30,8 +35,35 @@ const NumberInput = ({ onBack }: NumberInputProps) => {
       return;
     }
 
-    const ussdCode = `tel:*182*1*1*${number}*${amount}%23`;
-    window.location.href = ussdCode;
+    try {
+      // Create transaction object
+      const newTransaction = {
+        type: "send" as const,
+        to: number,
+        amount: `RWF ${amount}`,
+        date: "Today" as const,
+        isMomoPay: false,
+        timestamp: Date.now(),
+        userId: user?.id || 'demo-user'
+      };
+      
+      // If onTransactionComplete is passed, use it
+      if (onTransactionComplete) {
+        await onTransactionComplete(newTransaction);
+      } else {
+        // Otherwise save directly
+        await addTransaction(newTransaction);
+        
+        toast.success("Transaction completed successfully!");
+        
+        // Open USSD code
+        const ussdCode = `tel:*182*1*1*${number}*${amount}%23`;
+        window.location.href = ussdCode;
+      }
+    } catch (error) {
+      console.error("Transaction failed:", error);
+      toast.error("Transaction failed. Please try again.");
+    }
   };
 
   return (

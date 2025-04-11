@@ -16,6 +16,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Link } from "react-router-dom";
 import UserMenu from "@/components/UserMenu";
 import { useTransactions } from "@/hooks/useTransactions";
+import { useNavigate } from "react-router-dom";
 
 type Screen = "home" | "qr" | "number" | "momopay" | "generate" | "send" | "airtime" | "data";
 
@@ -23,8 +24,24 @@ const Index = () => {
   const [currentScreen, setCurrentScreen] = useState<Screen>("home");
   const [mode, setMode] = useState<"send" | "receive" | null>(null);
   const { user } = useAuth();
+  const navigate = useNavigate();
+  
   // Use our custom hook to get recent transactions (last 7 days)
-  const { transactions, isLoading } = useTransactions({ recentDays: 7 });
+  const { transactions, isLoading, addTransaction } = useTransactions({ recentDays: 7 });
+
+  // Function to handle successful transaction completion
+  const handleTransactionComplete = async (transaction: any) => {
+    console.log("Transaction completed:", transaction);
+    const savedTransaction = await addTransaction(transaction);
+    
+    // Navigate to receipt page and pass transaction data
+    navigate(`/receipt/${savedTransaction.timestamp}`, { 
+      state: { 
+        transaction: savedTransaction,
+        isNew: true 
+      } 
+    });
+  };
 
   const handleQRScanSuccess = (decodedText: string) => {
     try {
@@ -42,13 +59,13 @@ const Index = () => {
 
   const renderContent = () => {
     if (currentScreen === "send") {
-      return <SendMoneyView onBack={() => setCurrentScreen("home")} />;
+      return <SendMoneyView onBack={() => setCurrentScreen("home")} onTransactionComplete={handleTransactionComplete} />;
     }
     if (currentScreen === "airtime") {
-      return <BuyAirtimeView onBack={() => setCurrentScreen("home")} />;
+      return <BuyAirtimeView onBack={() => setCurrentScreen("home")} onTransactionComplete={handleTransactionComplete} />;
     }
     if (currentScreen === "data") {
-      return <BuyDataView onBack={() => setCurrentScreen("home")} />;
+      return <BuyDataView onBack={() => setCurrentScreen("home")} onTransactionComplete={handleTransactionComplete} />;
     }
     if (currentScreen === "home" && !mode) {
       return <div className="space-y-6 px-4 py-6">
@@ -96,9 +113,9 @@ const Index = () => {
       case "qr":
         return <QRScanner onBack={() => setCurrentScreen("home")} onScanSuccess={handleQRScanSuccess} />;
       case "number":
-        return <NumberInput onBack={() => setCurrentScreen("home")} />;
+        return <NumberInput onBack={() => setCurrentScreen("home")} onTransactionComplete={handleTransactionComplete} />;
       case "momopay":
-        return <MomoPayInput onBack={() => setCurrentScreen("home")} />;
+        return <MomoPayInput onBack={() => setCurrentScreen("home")} onTransactionComplete={handleTransactionComplete} />;
       case "generate":
         return <QRCodeGenerator onBack={() => setCurrentScreen("home")} />;
       default:

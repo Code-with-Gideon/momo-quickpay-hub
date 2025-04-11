@@ -1,5 +1,5 @@
 
-import { Send, Smartphone, Signal } from "lucide-react";
+import { Send, Smartphone, Signal, Store } from "lucide-react";
 import { Transaction } from "@/utils/transactionService";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -12,7 +12,11 @@ interface RecentTransactionsProps {
   limit?: number;
 }
 
-const getIcon = (type: Transaction["type"]) => {
+const getIcon = (type: Transaction["type"], isMomoPay?: boolean) => {
+  if (type === "send" && isMomoPay) {
+    return <Store className="w-6 h-6 text-white" />;
+  }
+  
   switch (type) {
     case "send":
       return <Send className="w-6 h-6 text-white" />;
@@ -23,7 +27,11 @@ const getIcon = (type: Transaction["type"]) => {
   }
 };
 
-const getTitle = (type: Transaction["type"]) => {
+const getTitle = (type: Transaction["type"], isMomoPay?: boolean) => {
+  if (type === "send" && isMomoPay) {
+    return "MomoPay";
+  }
+  
   switch (type) {
     case "send":
       return "Send Money";
@@ -99,21 +107,28 @@ const RecentTransactions = ({ transactions, isLoading, limit = 5 }: RecentTransa
               </div>
               <div className="space-y-4">
                 {dayTransactions.map((transaction, idx) => {
+                  // Determine if it's a MomoPay transaction
+                  const isMomoPay = transaction.type === "send" && 'isMomoPay' in transaction && transaction.isMomoPay;
+                  
                   // Determine the recipient info based on transaction type
                   const recipient = 'to' in transaction 
                     ? transaction.to 
-                    : transaction.phoneNumber;
+                    : 'phoneNumber' in transaction
+                      ? transaction.phoneNumber
+                      : 'Unknown';
                   
                   return (
                     <div key={idx} className="flex items-center gap-4">
                       <div className="w-12 h-12 rounded-full bg-[#070058] flex items-center justify-center">
-                        {getIcon(transaction.type)}
+                        {getIcon(transaction.type, isMomoPay)}
                       </div>
                       <div className="flex-1">
                         <p className="font-semibold text-[#070058]">
-                          {getTitle(transaction.type)}
+                          {getTitle(transaction.type, isMomoPay)}
                         </p>
-                        <p className="text-sm text-gray-500">To {recipient}</p>
+                        <p className="text-sm text-gray-500">
+                          {isMomoPay ? `MomoPay Code: ${recipient}` : `To ${recipient}`}
+                        </p>
                       </div>
                       <p className="font-semibold text-[#070058]">{transaction.amount}</p>
                     </div>

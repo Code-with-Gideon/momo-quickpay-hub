@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { ArrowLeft, QrCode, User2, Send, Star, Store } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -5,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import QRScanner from "./QRScanner";
 import { useTransactions } from "@/hooks/useTransactions";
+import { useAuth } from "@/contexts/AuthContext";
+import { Transaction } from "@/utils/transactionService";
 
 interface SendMoneyViewProps {
   onBack: () => void;
@@ -31,14 +34,65 @@ const SendMoneyView = ({ onBack, onTransactionComplete }: SendMoneyViewProps) =>
   const [activeTab, setActiveTab] = useState<"recent" | "favorite">("recent");
   const [isMomoPay, setIsMomoPay] = useState(false);
   
-  const { addTransaction } = useTransactions();
+  const { user } = useAuth();
+  const { addTransaction, transactions } = useTransactions();
 
+  // Load transactions from both local storage and the transactions hook
   useEffect(() => {
+    // Load from local storage for backward compatibility
     const stored = localStorage.getItem("send_money_history");
+    let storedTransactions: StoredTransaction[] = [];
+    
     if (stored) {
-      setRecentTransactions(JSON.parse(stored));
+      try {
+        storedTransactions = JSON.parse(stored);
+      } catch (error) {
+        console.error("Error parsing stored transactions:", error);
+      }
     }
-  }, []);
+    
+    // Convert transactions from the hook to the format used in this component
+    const hookTransactions = transactions
+      .filter(t => t.type === "send")
+      .map((t: Transaction) => {
+        if ('to' in t) {
+          return {
+            phoneNumber: t.to,
+            amount: t.amount,
+            date: t.date,
+            type: t.type,
+            isMomoPay: t.isMomoPay || false,
+            timestamp: t.timestamp,
+            userId: t.userId
+          } as StoredTransaction;
+        }
+        return null;
+      })
+      .filter(Boolean) as StoredTransaction[];
+    
+    // Merge transactions, preferring hook transactions over stored ones
+    const mergedTransactions = [...storedTransactions];
+    
+    // Add hook transactions if they don't exist in storedTransactions
+    hookTransactions.forEach(hookTx => {
+      const exists = storedTransactions.some(
+        storedTx => storedTx.phoneNumber === hookTx.phoneNumber && 
+                  storedTx.amount === hookTx.amount &&
+                  storedTx.timestamp === hookTx.timestamp
+      );
+      
+      if (!exists) {
+        mergedTransactions.push(hookTx);
+      }
+    });
+    
+    // Sort by timestamp, newest first
+    mergedTransactions.sort((a, b) => {
+      return (b.timestamp || 0) - (a.timestamp || 0);
+    });
+    
+    setRecentTransactions(mergedTransactions);
+  }, [transactions]);
 
   useEffect(() => {
     setIsMomoPay(/^\d{4,6}$/.test(accountNumber));
@@ -51,6 +105,7 @@ const SendMoneyView = ({ onBack, onTransactionComplete }: SendMoneyViewProps) =>
   const handleSelectRecent = (transaction: StoredTransaction) => {
     setAccountNumber(transaction.phoneNumber);
     setIsMomoPay(transaction.isMomoPay || false);
+    setStep("amount");
   };
 
   const toggleFavorite = (phoneNumber: string, e: React.MouseEvent) => {
@@ -61,8 +116,11 @@ const SendMoneyView = ({ onBack, onTransactionComplete }: SendMoneyViewProps) =>
       }
       return transaction;
     });
+    
+    // Update local storage
     localStorage.setItem("send_money_history", JSON.stringify(updatedTransactions));
     setRecentTransactions(updatedTransactions);
+    
     toast.success(updatedTransactions.find(t => t.phoneNumber === phoneNumber)?.isFavorite 
       ? "Added to favorites" 
       : "Removed from favorites"
@@ -82,7 +140,7 @@ const SendMoneyView = ({ onBack, onTransactionComplete }: SendMoneyViewProps) =>
         return;
       }
       if (isMomoPay && !/^\d{4,6}$/.test(accountNumber)) {
-        toast.error("Please enter a valid MomoPay code (5 digits)");
+        toast.error("Please enter a valid MomoPay code (4-6 digits)");
         return;
       }
       setStep("amount");
@@ -105,7 +163,8 @@ const SendMoneyView = ({ onBack, onTransactionComplete }: SendMoneyViewProps) =>
         amount: `RWF ${amount}`,
         date: "Today" as const,
         isMomoPay,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        userId: user?.id || 'demo-user'
       };
       
       if (onTransactionComplete) {
@@ -131,7 +190,7 @@ const SendMoneyView = ({ onBack, onTransactionComplete }: SendMoneyViewProps) =>
       const parsedData = JSON.parse(scannedData);
       if (parsedData.code) {
         setAccountNumber(parsedData.code);
-        setIsMomoPay(/^\d{5}$/.test(parsedData.code));
+        setIsMomoPay(/^\d{4,6}$/.test(parsedData.code));
         setStep("amount");
       } else {
         toast.error("Invalid QR code format");
@@ -202,15 +261,15 @@ const SendMoneyView = ({ onBack, onTransactionComplete }: SendMoneyViewProps) =>
           <div className="relative">
             <Input
               type="text"
-              placeholder={isMomoPay ? "Enter 5-digit MomoPay code" : "07xxxxxxxxx"}
+              placeholder={isMomoPay ? "Enter 4-6 digit MomoPay code" : "07xxxxxxxxx"}
               value={accountNumber}
               onChange={e => setAccountNumber(e.target.value)}
               className="h-12 bg-gray-50 rounded-xl pr-12 text-base placeholder:text-gray-400"
             />
             <button
+              type="button"
               className="absolute right-3 top-1/2 -translate-y-1/2 hover:scale-110 transition-transform"
-              onClick={e => {
-                e.preventDefault();
+              onClick={() => {
                 setStep("scan");
               }}
             >
@@ -228,6 +287,7 @@ const SendMoneyView = ({ onBack, onTransactionComplete }: SendMoneyViewProps) =>
         <div className="bg-white rounded-2xl overflow-hidden">
           <div className="flex border-b">
             <button
+              type="button"
               onClick={() => setActiveTab("recent")}
               className={`flex-1 py-3 text-sm font-semibold transition-colors ${
                 activeTab === "recent"
@@ -238,6 +298,7 @@ const SendMoneyView = ({ onBack, onTransactionComplete }: SendMoneyViewProps) =>
               Recents
             </button>
             <button
+              type="button"
               onClick={() => setActiveTab("favorite")}
               className={`flex-1 py-3 text-sm font-semibold transition-colors ${
                 activeTab === "favorite"
@@ -256,10 +317,10 @@ const SendMoneyView = ({ onBack, onTransactionComplete }: SendMoneyViewProps) =>
               </div>
             ) : (
               filteredTransactions.map((transaction, idx) => (
-                <button
+                <div
                   key={idx}
                   onClick={() => handleSelectRecent(transaction)}
-                  className="w-full p-4 flex items-center gap-4 hover:bg-gray-50 transition-colors relative"
+                  className="w-full p-4 flex items-center gap-4 hover:bg-gray-50 transition-colors relative cursor-pointer"
                 >
                   <div className="w-12 h-12 rounded-full bg-[#070058] flex items-center justify-center">
                     {transaction.isMomoPay ? <Store className="w-5 h-5 text-white" /> : <User2 className="w-5 h-5 text-white" />}
@@ -272,6 +333,7 @@ const SendMoneyView = ({ onBack, onTransactionComplete }: SendMoneyViewProps) =>
                   <div className="flex items-center gap-3">
                     <p className="text-sm font-medium text-[#070058]">{transaction.amount}</p>
                     <button
+                      type="button"
                       onClick={(e) => toggleFavorite(transaction.phoneNumber, e)}
                       className="p-1 hover:bg-gray-100 rounded-full transition-colors"
                     >
@@ -284,7 +346,7 @@ const SendMoneyView = ({ onBack, onTransactionComplete }: SendMoneyViewProps) =>
                       />
                     </button>
                   </div>
-                </button>
+                </div>
               ))
             )}
           </div>
