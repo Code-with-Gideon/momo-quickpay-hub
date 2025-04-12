@@ -17,139 +17,140 @@ export function useTransactions(options: UseTransactionsOptions = {}) {
   const [isLoading, setIsLoading] = useState(true);
   const { user, isAdmin } = useAuth();
 
-  useEffect(() => {
-    const fetchTransactions = async () => {
-      setIsLoading(true);
-      let result: Transaction[] = [];
+  // Define the fetchTransactions function to use throughout the hook
+  const fetchTransactions = async () => {
+    setIsLoading(true);
+    let result: Transaction[] = [];
 
-      try {
-        // If user is authenticated, fetch from Supabase
-        if (user) {
-          let query;
+    try {
+      // If user is authenticated, fetch from Supabase
+      if (user) {
+        let query;
+        
+        // If user is admin and no specific userId was requested, fetch all transactions
+        if ((isAdmin || options.isAdmin) && !options.userId) {
+          // Admins get access to all transactions
+          query = supabase.from('admin_transaction_view').select('*');
+        } else {
+          // Regular users or when specific user's transactions are requested
+          query = supabase.from('transactions').select('*');
           
-          // If user is admin and no specific userId was requested, fetch all transactions
-          if ((isAdmin || options.isAdmin) && !options.userId) {
-            // Admins get access to all transactions
-            query = supabase.from('admin_transaction_view').select('*');
-          } else {
-            // Regular users or when specific user's transactions are requested
-            query = supabase.from('transactions').select('*');
+          if (options.userId) {
+            query = query.eq('user_id', options.userId);
+          } else if (user && !isAdmin) {
+            // Non-admin users only see their own transactions
+            query = query.eq('user_id', user.id);
+          }
+        }
+        
+        if (options.type) {
+          query = query.eq('transaction_type', options.type);
+        }
+        
+        if (options.recentDays) {
+          const cutoffDate = new Date();
+          cutoffDate.setDate(cutoffDate.getDate() - options.recentDays);
+          query = query.gte('created_at', cutoffDate.toISOString());
+        }
+        
+        query = query.order('created_at', { ascending: false });
+        
+        const { data, error } = await query;
+        
+        if (error) {
+          console.error('Error fetching transactions from Supabase:', error);
+          // Fallback to local storage if Supabase fails
+          result = fetchFromLocalStorage();
+        } else {
+          console.log('Fetched transactions:', data);
+          // Convert Supabase format to local format with proper type checking
+          result = (data || []).map((t: any): Transaction => {
+            const baseTransaction = {
+              type: t.transaction_type as Transaction['type'],
+              amount: `RWF ${t.amount}`,
+              date: formatDateToRelative(t.created_at),
+              timestamp: new Date(t.created_at).getTime(),
+              userId: t.user_id,
+            };
             
-            if (options.userId) {
-              query = query.eq('user_id', options.userId);
-            } else if (user && !isAdmin) {
-              // Non-admin users only see their own transactions
-              query = query.eq('user_id', user.id);
-            }
-          }
-          
-          if (options.type) {
-            query = query.eq('transaction_type', options.type);
-          }
-          
-          if (options.recentDays) {
-            const cutoffDate = new Date();
-            cutoffDate.setDate(cutoffDate.getDate() - options.recentDays);
-            query = query.gte('created_at', cutoffDate.toISOString());
-          }
-          
-          query = query.order('created_at', { ascending: false });
-          
-          const { data, error } = await query;
-          
-          if (error) {
-            console.error('Error fetching transactions from Supabase:', error);
-            // Fallback to local storage if Supabase fails
-            result = fetchFromLocalStorage();
-          } else {
-            console.log('Fetched transactions:', data);
-            // Convert Supabase format to local format with proper type checking
-            result = (data || []).map((t: any): Transaction => {
-              const baseTransaction = {
-                type: t.transaction_type as Transaction['type'],
-                amount: `RWF ${t.amount}`,
-                date: formatDateToRelative(t.created_at),
-                timestamp: new Date(t.created_at).getTime(),
-                userId: t.user_id,
-              };
-              
-              // Create the correct transaction type based on transaction_type
-              if (t.transaction_type === 'send') {
-                return {
-                  ...baseTransaction,
-                  type: 'send',
-                  to: t.recipient,
-                  isMomoPay: false
-                };
-              } else if (t.transaction_type === 'airtime') {
-                return {
-                  ...baseTransaction,
-                  type: 'airtime',
-                  phoneNumber: t.recipient
-                };
-              } else if (t.transaction_type === 'data') {
-                return {
-                  ...baseTransaction, 
-                  type: 'data',
-                  phoneNumber: t.recipient,
-                  dataPackage: t.description || 'Standard Data'
-                };
-              }
-              
-              // Fallback (should never happen with proper data)
+            // Create the correct transaction type based on transaction_type
+            if (t.transaction_type === 'send') {
               return {
                 ...baseTransaction,
                 type: 'send',
-                to: t.recipient || 'Unknown',
+                to: t.recipient,
                 isMomoPay: false
               };
-            });
-          }
-        } else {
-          // Not authenticated, use local storage
-          result = fetchFromLocalStorage();
+            } else if (t.transaction_type === 'airtime') {
+              return {
+                ...baseTransaction,
+                type: 'airtime',
+                phoneNumber: t.recipient
+              };
+            } else if (t.transaction_type === 'data') {
+              return {
+                ...baseTransaction, 
+                type: 'data',
+                phoneNumber: t.recipient,
+                dataPackage: t.description || 'Standard Data'
+              };
+            }
+            
+            // Fallback (should never happen with proper data)
+            return {
+              ...baseTransaction,
+              type: 'send',
+              to: t.recipient || 'Unknown',
+              isMomoPay: false
+            };
+          });
         }
-
-        setTransactions(result);
-      } catch (error) {
-        console.error("Error fetching transactions:", error);
-        // Fallback to local storage on any error
+      } else {
+        // Not authenticated, use local storage
         result = fetchFromLocalStorage();
-        setTransactions(result);
-      } finally {
-        setIsLoading(false);
       }
-    };
 
-    // Helper function to fetch from localStorage
-    const fetchFromLocalStorage = (): Transaction[] => {
-      if (options.userId) {
-        return transactionService.getUserTransactions(options.userId);
-      } else if (options.type) {
-        return transactionService.getTransactionsByType(options.type);
-      } else if (options.recentDays) {
-        return transactionService.getRecentTransactions(options.recentDays);
-      } else {
-        return transactionService.getAllTransactions();
-      }
-    };
+      setTransactions(result);
+    } catch (error) {
+      console.error("Error fetching transactions:", error);
+      // Fallback to local storage on any error
+      result = fetchFromLocalStorage();
+      setTransactions(result);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    // Helper function to format date
-    const formatDateToRelative = (dateString: string): "Today" | "Yesterday" => {
-      const date = new Date(dateString);
-      const today = new Date();
-      const yesterday = new Date(today);
-      yesterday.setDate(yesterday.getDate() - 1);
-      
-      if (date.toDateString() === today.toDateString()) {
-        return "Today";
-      } else if (date.toDateString() === yesterday.toDateString()) {
-        return "Yesterday";
-      } else {
-        return "Today"; // Default fallback
-      }
-    };
+  // Helper function to fetch from localStorage
+  const fetchFromLocalStorage = (): Transaction[] => {
+    if (options.userId) {
+      return transactionService.getUserTransactions(options.userId);
+    } else if (options.type) {
+      return transactionService.getTransactionsByType(options.type);
+    } else if (options.recentDays) {
+      return transactionService.getRecentTransactions(options.recentDays);
+    } else {
+      return transactionService.getAllTransactions();
+    }
+  };
 
+  // Helper function to format date
+  const formatDateToRelative = (dateString: string): "Today" | "Yesterday" => {
+    const date = new Date(dateString);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    if (date.toDateString() === today.toDateString()) {
+      return "Today";
+    } else if (date.toDateString() === yesterday.toDateString()) {
+      return "Yesterday";
+    } else {
+      return "Today"; // Default fallback
+    }
+  };
+
+  useEffect(() => {
     // Initial fetch
     fetchTransactions();
 
@@ -273,7 +274,7 @@ export function useTransactions(options: UseTransactionsOptions = {}) {
       console.log('Transaction updated successfully:', data);
       
       // Refresh transactions after update
-      await refreshTransactions();
+      await fetchTransactions();
       
       return data[0];
     } catch (error) {
@@ -304,7 +305,7 @@ export function useTransactions(options: UseTransactionsOptions = {}) {
       console.log('Transaction deleted successfully');
       
       // Refresh transactions after deletion
-      await refreshTransactions();
+      await fetchTransactions();
       
       return true;
     } catch (error) {
@@ -321,7 +322,7 @@ export function useTransactions(options: UseTransactionsOptions = {}) {
     deleteTransaction,
     refreshTransactions: async () => {
       // Will trigger the useEffect to reload from Supabase or localStorage
-      setIsLoading(true);
+      await fetchTransactions();
     },
   };
 }
