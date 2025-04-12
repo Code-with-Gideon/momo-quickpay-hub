@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Transaction, transactionService } from '../utils/transactionService';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -17,28 +16,27 @@ export function useTransactions(options: UseTransactionsOptions = {}) {
   const [isLoading, setIsLoading] = useState(true);
   const { user, isAdmin } = useAuth();
 
-  // Define the fetchTransactions function to use throughout the hook
-  const fetchTransactions = async () => {
+  const fetchTransactions = useCallback(async () => {
+    console.log('Fetching transactions with options:', options);
     setIsLoading(true);
     let result: Transaction[] = [];
 
     try {
-      // If user is authenticated, fetch from Supabase
       if (user) {
         let query;
         
-        // If user is admin and no specific userId was requested, fetch all transactions
         if ((isAdmin || options.isAdmin) && !options.userId) {
-          // Admins get access to all transactions
+          console.log('Admin fetching all transactions');
           query = supabase.from('admin_transaction_view').select('*');
         } else {
-          // Regular users or when specific user's transactions are requested
+          console.log('Fetching transactions for specific user or current user');
           query = supabase.from('transactions').select('*');
           
           if (options.userId) {
+            console.log('Fetching transactions for user ID:', options.userId);
             query = query.eq('user_id', options.userId);
           } else if (user && !isAdmin) {
-            // Non-admin users only see their own transactions
+            console.log('Non-admin user fetching own transactions');
             query = query.eq('user_id', user.id);
           }
         }
@@ -59,11 +57,9 @@ export function useTransactions(options: UseTransactionsOptions = {}) {
         
         if (error) {
           console.error('Error fetching transactions from Supabase:', error);
-          // Fallback to local storage if Supabase fails
           result = fetchFromLocalStorage();
         } else {
           console.log('Fetched transactions:', data);
-          // Convert Supabase format to local format with proper type checking
           result = (data || []).map((t: any): Transaction => {
             const baseTransaction = {
               type: t.transaction_type as Transaction['type'],
@@ -73,7 +69,6 @@ export function useTransactions(options: UseTransactionsOptions = {}) {
               userId: t.user_id,
             };
             
-            // Create the correct transaction type based on transaction_type
             if (t.transaction_type === 'send') {
               return {
                 ...baseTransaction,
@@ -96,7 +91,6 @@ export function useTransactions(options: UseTransactionsOptions = {}) {
               };
             }
             
-            // Fallback (should never happen with proper data)
             return {
               ...baseTransaction,
               type: 'send',
@@ -106,22 +100,20 @@ export function useTransactions(options: UseTransactionsOptions = {}) {
           });
         }
       } else {
-        // Not authenticated, use local storage
         result = fetchFromLocalStorage();
       }
 
+      console.log('Setting transactions state with:', result.length, 'items');
       setTransactions(result);
     } catch (error) {
       console.error("Error fetching transactions:", error);
-      // Fallback to local storage on any error
       result = fetchFromLocalStorage();
       setTransactions(result);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user, isAdmin, options.userId, options.type, options.recentDays, options.isAdmin]);
 
-  // Helper function to fetch from localStorage
   const fetchFromLocalStorage = (): Transaction[] => {
     if (options.userId) {
       return transactionService.getUserTransactions(options.userId);
@@ -134,7 +126,6 @@ export function useTransactions(options: UseTransactionsOptions = {}) {
     }
   };
 
-  // Helper function to format date
   const formatDateToRelative = (dateString: string): "Today" | "Yesterday" => {
     const date = new Date(dateString);
     const today = new Date();
@@ -151,16 +142,14 @@ export function useTransactions(options: UseTransactionsOptions = {}) {
   };
 
   useEffect(() => {
-    // Initial fetch
+    console.log('useEffect triggered in useTransactions - fetching transactions');
     fetchTransactions();
 
-    // Set up refresh interval if specified
     let intervalId: number | null = null;
     if (options.refreshInterval) {
       intervalId = window.setInterval(fetchTransactions, options.refreshInterval);
     }
 
-    // Listen for storage events to update in real-time across tabs
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'transactions') {
         fetchTransactions();
@@ -168,12 +157,12 @@ export function useTransactions(options: UseTransactionsOptions = {}) {
     };
     window.addEventListener('storage', handleStorageChange);
 
-    // Subscription to Supabase realtime changes if user is authenticated
     let subscription: any;
     if (user) {
       subscription = supabase
         .channel('transactions')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, () => {
+          console.log('Real-time update detected - fetching transactions');
           fetchTransactions();
         })
         .subscribe();
@@ -188,11 +177,9 @@ export function useTransactions(options: UseTransactionsOptions = {}) {
         subscription.unsubscribe();
       }
     };
-  }, [options.userId, options.type, options.recentDays, options.refreshInterval, options.isAdmin, user, isAdmin]);
+  }, [options.userId, options.type, options.recentDays, options.refreshInterval, options.isAdmin, user, isAdmin, fetchTransactions]);
 
-  // Function to add a new transaction
   const addTransaction = async (transaction: Omit<Transaction, 'timestamp' | 'userId'> & { timestamp?: number, userId?: string }) => {
-    // Generate a full transaction object for local storage
     const fullTransaction = {
       ...transaction,
       timestamp: transaction.timestamp || Date.now(),
@@ -200,11 +187,9 @@ export function useTransactions(options: UseTransactionsOptions = {}) {
     } as Transaction;
     
     try {
-      // If user is authenticated, save to Supabase
       if (user) {
         console.log('Saving transaction to Supabase:', fullTransaction);
         
-        // Map local transaction format to Supabase format
         const supabaseTransaction = {
           user_id: transaction.userId || user.id,
           amount: parseFloat(transaction.amount.replace(/[^0-9.]/g, "")),
@@ -229,29 +214,24 @@ export function useTransactions(options: UseTransactionsOptions = {}) {
           
         if (error) {
           console.error('Error saving transaction to Supabase:', error);
-          // Fallback to local storage if Supabase fails
           transactionService.saveTransaction(fullTransaction);
         } else {
           console.log('Transaction saved successfully:', data);
         }
       } else {
-        // Not authenticated, save to local storage
         transactionService.saveTransaction(fullTransaction);
       }
       
-      // Update local state
       setTransactions(prev => [fullTransaction, ...prev]);
       return fullTransaction;
     } catch (error) {
       console.error('Failed to save transaction:', error);
-      // Fallback to local storage on any error
       transactionService.saveTransaction(fullTransaction);
       setTransactions(prev => [fullTransaction, ...prev]);
       return fullTransaction;
     }
   };
 
-  // Function to update an existing transaction (admin only)
   const updateTransaction = async (id: string, updates: any) => {
     if (!isAdmin && !options.isAdmin) {
       console.error('Only admins can update transactions');
@@ -273,7 +253,6 @@ export function useTransactions(options: UseTransactionsOptions = {}) {
       
       console.log('Transaction updated successfully:', data);
       
-      // Refresh transactions after update
       await fetchTransactions();
       
       return data[0];
@@ -283,7 +262,6 @@ export function useTransactions(options: UseTransactionsOptions = {}) {
     }
   };
 
-  // Function to delete a transaction (admin only)
   const deleteTransaction = async (id: string) => {
     if (!isAdmin && !options.isAdmin) {
       console.error('Only admins can delete transactions');
@@ -304,7 +282,6 @@ export function useTransactions(options: UseTransactionsOptions = {}) {
       
       console.log('Transaction deleted successfully');
       
-      // Refresh transactions after deletion
       await fetchTransactions();
       
       return true;
@@ -320,9 +297,6 @@ export function useTransactions(options: UseTransactionsOptions = {}) {
     addTransaction,
     updateTransaction,
     deleteTransaction,
-    refreshTransactions: async () => {
-      // Will trigger the useEffect to reload from Supabase or localStorage
-      await fetchTransactions();
-    },
+    refreshTransactions: fetchTransactions,
   };
 }

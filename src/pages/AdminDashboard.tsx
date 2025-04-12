@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Search, Download, ChevronLeft, ChevronRight, BarChart, Users, Pencil, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useTransactions } from "@/hooks/useTransactions";
 
 interface UserType {
@@ -54,6 +54,7 @@ const AdminDashboard = () => {
   const [editRecipient, setEditRecipient] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [editStatus, setEditStatus] = useState("");
+  const [activeTab, setActiveTab] = useState("users");
   const itemsPerPage = 10;
   
   // Use our enhanced useTransactions hook for all transaction-related operations
@@ -69,68 +70,73 @@ const AdminDashboard = () => {
     refreshInterval: 0 // Don't auto-refresh
   });
 
-  useEffect(() => {
-    if (!isAdmin) {
-      navigate("/");
-      return;
-    }
+  const fetchDashboardData = useCallback(async () => {
+    if (!isAdmin) return;
+    
+    setIsLoadingUsers(true);
+    try {
+      const { data: transData, error: transError } = await supabase
+        .from('admin_transaction_view')
+        .select('*');
 
-    const fetchData = async () => {
-      setIsLoadingUsers(true);
-      try {
-        const { data: transData, error: transError } = await supabase
-          .from('admin_transaction_view')
-          .select('*');
-
-        if (transError) {
-          console.error('Error fetching transactions:', transError);
-        } else if (transData) {
-          setTotalTransactions(transData.length);
-          const total = transData.reduce((sum, trans) => sum + (trans.amount || 0), 0);
-          setTotalAmount(total);
-        }
-
-        const from = (currentPage - 1) * itemsPerPage;
-        const to = from + itemsPerPage - 1;
-
-        const { count } = await supabase
-          .from('profiles')
-          .select('*', { count: 'exact', head: true })
-          .ilike('display_name', `%${searchTerm}%`);
-
-        setTotalUsers(count || 0);
-
-        const { data: userData, error: userError } = await supabase
-          .from('profiles')
-          .select(`
-            id,
-            email,
-            display_name,
-            phone_number,
-            created_at
-          `)
-          .ilike('display_name', `%${searchTerm}%`)
-          .order('created_at', { ascending: false })
-          .range(from, to);
-
-        if (userError) {
-          console.error('Error fetching users:', userError);
-        } else if (userData) {
-          setUsers(userData as UserType[]);
-        }
-
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      } finally {
-        setIsLoadingUsers(false);
+      if (transError) {
+        console.error('Error fetching transactions:', transError);
+      } else if (transData) {
+        setTotalTransactions(transData.length);
+        const total = transData.reduce((sum, trans) => sum + (trans.amount || 0), 0);
+        setTotalAmount(total);
       }
-    };
 
-    fetchData();
-  }, [isAdmin, navigate, currentPage, searchTerm]);
+      const from = (currentPage - 1) * itemsPerPage;
+      const to = from + itemsPerPage - 1;
 
+      const { count } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .ilike('display_name', `%${searchTerm}%`);
+
+      setTotalUsers(count || 0);
+
+      const { data: userData, error: userError } = await supabase
+        .from('profiles')
+        .select(`
+          id,
+          email,
+          display_name,
+          phone_number,
+          created_at
+        `)
+        .ilike('display_name', `%${searchTerm}%`)
+        .order('created_at', { ascending: false })
+        .range(from, to);
+
+      if (userError) {
+        console.error('Error fetching users:', userError);
+      } else if (userData) {
+        setUsers(userData as UserType[]);
+      }
+
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    } finally {
+      setIsLoadingUsers(false);
+    }
+  }, [isAdmin, currentPage, searchTerm]);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData]);
+
+  // When a user is selected, switch to the transactions tab
   const handleUserSelect = (userId: string) => {
-    setSelectedUser(userId === selectedUser ? null : userId);
+    if (userId === selectedUser) {
+      setSelectedUser(null);
+      setActiveTab("users");
+    } else {
+      setSelectedUser(userId);
+      setActiveTab("transactions");
+      console.log("Selected user:", userId);
+    }
   };
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -319,7 +325,7 @@ const AdminDashboard = () => {
               </Card>
             </div>
             
-            <Tabs defaultValue="users" className="w-full">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList>
                 <TabsTrigger value="users">Users</TabsTrigger>
                 <TabsTrigger value="transactions" disabled={!selectedUser}>
@@ -437,10 +443,15 @@ const AdminDashboard = () => {
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <CardTitle>User Transactions</CardTitle>
-                    <Button variant="outline" onClick={handleDownloadCSV}>
-                      <Download className="h-4 w-4 mr-2" />
-                      Export
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button variant="outline" onClick={() => setActiveTab("users")}>
+                        Back to Users
+                      </Button>
+                      <Button variant="outline" onClick={handleDownloadCSV}>
+                        <Download className="h-4 w-4 mr-2" />
+                        Export
+                      </Button>
+                    </div>
                   </CardHeader>
                   <CardContent>
                     {selectedUser ? (
