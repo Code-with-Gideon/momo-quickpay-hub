@@ -19,6 +19,9 @@ export function useTransactions(options: UseTransactionsOptions = {}) {
 
   const fetchTransactions = useCallback(async () => {
     console.log('Fetching transactions with options:', options);
+    console.log('User ID being fetched:', options.userId);
+    console.log('Is admin flag:', isAdmin || options.isAdmin);
+    
     setIsLoading(true);
     let result: Transaction[] = [];
 
@@ -145,6 +148,9 @@ export function useTransactions(options: UseTransactionsOptions = {}) {
 
   useEffect(() => {
     console.log('useEffect triggered in useTransactions - fetching transactions');
+    console.log('Current userId:', options.userId);
+    console.log('Current isAdmin:', options.isAdmin);
+    
     fetchTransactions();
 
     let intervalId: number | null = null;

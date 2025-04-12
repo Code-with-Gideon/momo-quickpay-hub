@@ -70,23 +70,28 @@ const AdminDashboard = () => {
     refreshInterval: 0 // Don't auto-refresh
   });
 
+  console.log("AdminDashboard - Selected User:", selectedUser);
+  console.log("AdminDashboard - Transactions count:", transactions.length);
+
   const fetchDashboardData = useCallback(async () => {
     if (!isAdmin) return;
     
     setIsLoadingUsers(true);
     try {
+      // Fetch dashboard summary data
       const { data: transData, error: transError } = await supabase
         .from('admin_transaction_view')
         .select('*');
 
       if (transError) {
-        console.error('Error fetching transactions:', transError);
+        console.error('Error fetching transactions summary:', transError);
       } else if (transData) {
         setTotalTransactions(transData.length);
         const total = transData.reduce((sum, trans) => sum + (trans.amount || 0), 0);
         setTotalAmount(total);
       }
 
+      // Fetch users with pagination
       const from = (currentPage - 1) * itemsPerPage;
       const to = from + itemsPerPage - 1;
 
@@ -117,7 +122,7 @@ const AdminDashboard = () => {
       }
 
     } catch (error) {
-      console.error("Error fetching data:", error);
+      console.error("Error fetching dashboard data:", error);
     } finally {
       setIsLoadingUsers(false);
     }
@@ -129,15 +134,26 @@ const AdminDashboard = () => {
 
   // When a user is selected, switch to the transactions tab
   const handleUserSelect = (userId: string) => {
+    console.log("Selecting user:", userId);
+    
     if (userId === selectedUser) {
+      console.log("Deselecting user");
       setSelectedUser(null);
       setActiveTab("users");
     } else {
+      console.log("Setting selected user and switching to transactions tab");
       setSelectedUser(userId);
       setActiveTab("transactions");
-      console.log("Selected user:", userId);
     }
   };
+
+  // Explicitly refresh transactions when the tab changes to transactions
+  useEffect(() => {
+    if (activeTab === "transactions" && selectedUser) {
+      console.log("Tab changed to transactions, refreshing data for userId:", selectedUser);
+      refreshTransactions();
+    }
+  }, [activeTab, selectedUser, refreshTransactions]);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
@@ -150,12 +166,12 @@ const AdminDashboard = () => {
         ['ID', 'Type', 'Amount', 'Recipient', 'Description', 'Status', 'Date'],
         ...transactions.map((t: any) => [
           t.id,
-          t.transaction_type,
+          t.transaction_type || t.type,
           t.amount,
-          t.recipient,
-          t.description || '',
-          t.status,
-          new Date(t.created_at).toLocaleString()
+          t.recipient || t.to || t.phoneNumber || '',
+          t.description || t.dataPackage || '',
+          t.status || 'completed',
+          new Date(t.created_at || t.timestamp).toLocaleString()
         ])
       ] :
       [
@@ -264,7 +280,8 @@ const AdminDashboard = () => {
   // Use this effect to monitor the transactions list for debugging
   useEffect(() => {
     console.log('Current transactions list:', transactionsList.length, 'items');
-  }, [transactionsList.length]);
+    console.log('Raw transactions from hook:', transactions.length, 'items');
+  }, [transactionsList.length, transactions.length]);
 
   return (
     <div className="min-h-screen bg-gray-50 py-6">
@@ -607,7 +624,7 @@ const AdminDashboard = () => {
                 id="status"
                 value={editStatus}
                 onChange={(e) => setEditStatus(e.target.value)}
-                className="col-span-3 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                className="col-span-3 flex h-10 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#070058] focus:border-transparent"
               >
                 <option value="completed">Completed</option>
                 <option value="pending">Pending</option>
