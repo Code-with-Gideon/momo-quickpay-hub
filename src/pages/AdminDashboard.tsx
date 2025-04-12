@@ -210,6 +210,9 @@ const AdminDashboard = () => {
       await updateTransaction(editingTransaction.id, updates);
       toast.success("Transaction updated successfully");
       setIsEditDialogOpen(false);
+      if (selectedUser) {
+        refreshTransactions();
+      }
     } catch (error: any) {
       console.error('Error updating transaction:', error);
       toast.error("Failed to update transaction: " + (error.message || "Unknown error"));
@@ -226,6 +229,9 @@ const AdminDashboard = () => {
     try {
       await deleteTransaction(transactionId);
       toast.success("Transaction deleted successfully");
+      if (selectedUser) {
+        refreshTransactions();
+      }
     } catch (error: any) {
       console.error('Error deleting transaction:', error);
       toast.error("Failed to delete transaction: " + (error.message || "Unknown error"));
@@ -247,13 +253,18 @@ const AdminDashboard = () => {
     display_name: t.displayName,
     email: t.email,
     phone_number: t.phoneNumber,
-    amount: parseFloat(t.amount.replace(/[^0-9.]/g, "")),
+    amount: parseFloat(String(t.amount).replace(/[^0-9.]/g, "")),
     transaction_type: t.type,
     recipient: t.type === 'send' ? t.to : (t.phoneNumber || ''),
     description: t.type === 'data' ? t.dataPackage : null,
     status: 'completed',
     created_at: new Date(t.timestamp).toISOString()
   })) as TransactionType[];
+
+  // Use this effect to monitor the transactions list for debugging
+  useEffect(() => {
+    console.log('Current transactions list:', transactionsList.length, 'items');
+  }, [transactionsList.length]);
 
   return (
     <div className="min-h-screen bg-gray-50 py-6">
@@ -444,12 +455,24 @@ const AdminDashboard = () => {
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <CardTitle>User Transactions</CardTitle>
                     <div className="flex gap-2">
-                      <Button variant="outline" onClick={() => setActiveTab("users")}>
+                      <Button variant="outline" onClick={() => {
+                        setActiveTab("users");
+                        // Don't clear selectedUser here to prevent losing transaction data
+                      }}>
                         Back to Users
                       </Button>
                       <Button variant="outline" onClick={handleDownloadCSV}>
                         <Download className="h-4 w-4 mr-2" />
                         Export
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        onClick={() => {
+                          console.log("Manual refresh triggered");
+                          refreshTransactions();
+                        }}
+                      >
+                        Refresh
                       </Button>
                     </div>
                   </CardHeader>

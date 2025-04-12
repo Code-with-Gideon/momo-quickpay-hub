@@ -32,6 +32,9 @@ const TransactionDashboard = ({ userId, isAdmin }: TransactionDashboardProps) =>
     isAdmin: isAdmin
   });
 
+  console.log("TransactionDashboard loaded with userId:", userId, "isAdmin:", isAdmin);
+  console.log("Current transactions count:", transactions.length);
+
   // Function to handle successful transaction completion
   const handleTransactionComplete = async (transaction: any) => {
     console.log("Transaction completed:", transaction);

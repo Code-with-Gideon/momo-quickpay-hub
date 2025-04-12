@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { Transaction, transactionService } from '../utils/transactionService';
 import { supabase } from '@/integrations/supabase/client';
@@ -67,6 +68,7 @@ export function useTransactions(options: UseTransactionsOptions = {}) {
               date: formatDateToRelative(t.created_at),
               timestamp: new Date(t.created_at).getTime(),
               userId: t.user_id,
+              id: t.id
             };
             
             if (t.transaction_type === 'send') {
