@@ -1,18 +1,18 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import UserMenu from "@/components/UserMenu";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { Search, Download, ChevronLeft, ChevronRight, BarChart, Users, Pencil, Trash2 } from "lucide-react";
-import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useTransactions } from "@/hooks/useTransactions";
+
+// Import refactored components
+import DashboardMetrics from "@/components/admin/DashboardMetrics";
+import UserList from "@/components/admin/UserList";
+import TransactionList from "@/components/admin/TransactionList";
+import TransactionEdit from "@/components/admin/TransactionEdit";
+import AccessDenied from "@/components/admin/AccessDenied";
 
 interface UserType {
   id: string;
@@ -39,7 +39,6 @@ interface TransactionType {
 
 const AdminDashboard = () => {
   const { user, isAdmin } = useAuth();
-  const navigate = useNavigate();
   const [users, setUsers] = useState<UserType[]>([]);
   const [isLoadingUsers, setIsLoadingUsers] = useState(true);
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
@@ -254,14 +253,6 @@ const AdminDashboard = () => {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
-    });
-  };
-
   // Map the transactions from the hook format to the format expected by the component
   const transactionsList = transactions.map((t: any) => ({
     id: t.id || t.userId + t.timestamp,
@@ -295,63 +286,14 @@ const AdminDashboard = () => {
         </header>
         
         {!isAdmin ? (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <h2 className="text-xl font-semibold mb-2">Access Denied</h2>
-              <p className="text-gray-500 mb-4">You don't have permission to view this page.</p>
-              <Button onClick={() => navigate("/")}>Return Home</Button>
-            </CardContent>
-          </Card>
+          <AccessDenied />
         ) : (
           <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-500">Total Users</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-baseline">
-                    <div className="text-2xl font-semibold">{totalUsers}</div>
-                    <div className="ml-2 text-sm text-gray-500">accounts</div>
-                  </div>
-                  <div className="mt-2 flex items-center text-xs">
-                    <Users className="h-4 w-4 mr-1 text-[#070058]" />
-                    <span>User accounts registered</span>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-500">Total Transactions</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-baseline">
-                    <div className="text-2xl font-semibold">{totalTransactions}</div>
-                    <div className="ml-2 text-sm text-gray-500">processed</div>
-                  </div>
-                  <div className="mt-2 flex items-center text-xs">
-                    <BarChart className="h-4 w-4 mr-1 text-[#070058]" />
-                    <span>All time transaction count</span>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-500">Total Volume</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-baseline">
-                    <div className="text-2xl font-semibold">RWF {totalAmount.toLocaleString()}</div>
-                  </div>
-                  <div className="mt-2 flex items-center text-xs">
-                    <BarChart className="h-4 w-4 mr-1 text-[#070058]" />
-                    <span>Cumulative transaction value</span>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+            <DashboardMetrics
+              totalUsers={totalUsers}
+              totalTransactions={totalTransactions}
+              totalAmount={totalAmount}
+            />
             
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList>
@@ -362,284 +304,51 @@ const AdminDashboard = () => {
               </TabsList>
               
               <TabsContent value="users">
-                <Card>
-                  <CardHeader className="pb-0">
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                      <CardTitle>All Users</CardTitle>
-                      <div className="flex gap-2 w-full md:w-auto">
-                        <div className="relative flex-grow md:flex-grow-0">
-                          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
-                          <Input
-                            placeholder="Search users..."
-                            value={searchTerm}
-                            onChange={handleSearchChange}
-                            className="pl-8 w-full md:w-[180px]"
-                          />
-                        </div>
-                        <Button variant="outline" onClick={handleDownloadCSV}>
-                          <Download className="h-4 w-4 mr-2" />
-                          Export
-                        </Button>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    {isLoadingUsers ? (
-                      <div className="py-8 text-center">
-                        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#070058] mx-auto"></div>
-                        <p className="mt-2 text-gray-500">Loading users...</p>
-                      </div>
-                    ) : users.length === 0 ? (
-                      <div className="py-8 text-center">
-                        <p className="text-gray-500">No users found</p>
-                      </div>
-                    ) : (
-                      <>
-                        <div className="overflow-x-auto">
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead className="w-[100px]">Name</TableHead>
-                                <TableHead>Email</TableHead>
-                                <TableHead>Phone</TableHead>
-                                <TableHead>Created</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {users.map((user) => (
-                                <TableRow 
-                                  key={user.id} 
-                                  className={selectedUser === user.id ? "bg-blue-50" : ""}
-                                >
-                                  <TableCell className="font-medium">
-                                    {user.display_name || 'N/A'}
-                                  </TableCell>
-                                  <TableCell>{user.email || 'N/A'}</TableCell>
-                                  <TableCell>{user.phone_number || 'N/A'}</TableCell>
-                                  <TableCell>{formatDate(user.created_at)}</TableCell>
-                                  <TableCell className="text-right">
-                                    <Button
-                                      variant={selectedUser === user.id ? "default" : "outline"}
-                                      size="sm"
-                                      onClick={() => handleUserSelect(user.id)}
-                                    >
-                                      {selectedUser === user.id ? "Hide Transactions" : "View Transactions"}
-                                    </Button>
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </div>
-                        
-                        <div className="flex items-center justify-between mt-4">
-                          <p className="text-sm text-gray-500">
-                            Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
-                            {Math.min(currentPage * itemsPerPage, totalUsers)} of {totalUsers} users
-                          </p>
-                          <div className="flex items-center space-x-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                              disabled={currentPage === 1}
-                            >
-                              <ChevronLeft className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => 
-                                setCurrentPage((prev) => 
-                                  prev * itemsPerPage < totalUsers ? prev + 1 : prev
-                                )
-                              }
-                              disabled={currentPage * itemsPerPage >= totalUsers}
-                            >
-                              <ChevronRight className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      </>
-                    )}
-                  </CardContent>
-                </Card>
+                <UserList
+                  users={users}
+                  isLoading={isLoadingUsers}
+                  selectedUser={selectedUser}
+                  searchTerm={searchTerm}
+                  currentPage={currentPage}
+                  totalUsers={totalUsers}
+                  itemsPerPage={itemsPerPage}
+                  onUserSelect={handleUserSelect}
+                  onSearchChange={handleSearchChange}
+                  onPageChange={setCurrentPage}
+                  onDownloadCSV={handleDownloadCSV}
+                />
               </TabsContent>
               
               <TabsContent value="transactions">
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle>User Transactions</CardTitle>
-                    <div className="flex gap-2">
-                      <Button variant="outline" onClick={() => {
-                        setActiveTab("users");
-                        // Don't clear selectedUser here to prevent losing transaction data
-                      }}>
-                        Back to Users
-                      </Button>
-                      <Button variant="outline" onClick={handleDownloadCSV}>
-                        <Download className="h-4 w-4 mr-2" />
-                        Export
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        onClick={() => {
-                          console.log("Manual refresh triggered");
-                          refreshTransactions();
-                        }}
-                      >
-                        Refresh
-                      </Button>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    {selectedUser ? (
-                      isLoadingTransactions ? (
-                        <div className="py-8 text-center">
-                          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#070058] mx-auto"></div>
-                          <p className="mt-2 text-gray-500">Loading transactions...</p>
-                        </div>
-                      ) : transactionsList.length === 0 ? (
-                        <div className="py-8 text-center">
-                          <p className="text-gray-500">No transactions found for this user</p>
-                        </div>
-                      ) : (
-                        <div className="overflow-x-auto">
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead>Type</TableHead>
-                                <TableHead>Amount</TableHead>
-                                <TableHead>Recipient</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead>Date</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {transactionsList.map((transaction) => (
-                                <TableRow key={transaction.id}>
-                                  <TableCell className="capitalize">
-                                    {transaction.transaction_type}
-                                  </TableCell>
-                                  <TableCell>RWF {transaction.amount.toLocaleString()}</TableCell>
-                                  <TableCell>{transaction.recipient}</TableCell>
-                                  <TableCell>
-                                    <span 
-                                      className={`inline-block px-2 py-1 text-xs rounded-full ${
-                                        transaction.status === 'completed' 
-                                          ? 'bg-green-100 text-green-800' 
-                                          : 'bg-yellow-100 text-yellow-800'
-                                      }`}
-                                    >
-                                      {transaction.status}
-                                    </span>
-                                  </TableCell>
-                                  <TableCell>{formatDate(transaction.created_at)}</TableCell>
-                                  <TableCell className="text-right">
-                                    <div className="flex justify-end gap-2">
-                                      <Button 
-                                        variant="outline" 
-                                        size="icon"
-                                        onClick={() => handleEditTransaction(transaction)}
-                                      >
-                                        <Pencil className="h-4 w-4" />
-                                      </Button>
-                                      <Button 
-                                        variant="outline" 
-                                        size="icon"
-                                        onClick={() => handleDeleteTransaction(transaction.id)}
-                                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                                      >
-                                        <Trash2 className="h-4 w-4" />
-                                      </Button>
-                                    </div>
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </div>
-                      )
-                    ) : (
-                      <div className="py-8 text-center">
-                        <p className="text-gray-500">Select a user to view their transactions</p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                <TransactionList
+                  transactions={transactionsList}
+                  isLoading={isLoadingTransactions}
+                  selectedUser={selectedUser}
+                  onEditTransaction={handleEditTransaction}
+                  onDeleteTransaction={handleDeleteTransaction}
+                  onDownloadCSV={handleDownloadCSV}
+                  onRefresh={refreshTransactions}
+                  onBackToUsers={() => setActiveTab("users")}
+                />
               </TabsContent>
             </Tabs>
           </div>
         )}
       </div>
 
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Edit Transaction</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <label htmlFor="amount" className="text-right text-sm">
-                Amount
-              </label>
-              <Input
-                id="amount"
-                type="number"
-                value={editAmount}
-                onChange={(e) => setEditAmount(e.target.value)}
-                className="col-span-3"
-                min="100"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <label htmlFor="recipient" className="text-right text-sm">
-                Recipient
-              </label>
-              <Input
-                id="recipient"
-                value={editRecipient}
-                onChange={(e) => setEditRecipient(e.target.value)}
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <label htmlFor="description" className="text-right text-sm">
-                Description
-              </label>
-              <Input
-                id="description"
-                value={editDescription}
-                onChange={(e) => setEditDescription(e.target.value)}
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <label htmlFor="status" className="text-right text-sm">
-                Status
-              </label>
-              <select
-                id="status"
-                value={editStatus}
-                onChange={(e) => setEditStatus(e.target.value)}
-                className="col-span-3 flex h-10 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#070058] focus:border-transparent"
-              >
-                <option value="completed">Completed</option>
-                <option value="pending">Pending</option>
-                <option value="failed">Failed</option>
-              </select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleSaveEdit}>Save changes</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <TransactionEdit
+        isOpen={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+        editAmount={editAmount}
+        setEditAmount={setEditAmount}
+        editRecipient={editRecipient}
+        setEditRecipient={setEditRecipient}
+        editDescription={editDescription}
+        setEditDescription={setEditDescription}
+        editStatus={editStatus}
+        setEditStatus={setEditStatus}
+        onSave={handleSaveEdit}
+      />
     </div>
   );
 };
