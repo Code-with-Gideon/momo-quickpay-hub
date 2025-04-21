@@ -10,6 +10,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, ArrowRight, Phone } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { 
+  InputOTP, 
+  InputOTPGroup, 
+  InputOTPSlot 
+} from "@/components/ui/input-otp";
 
 const Auth = () => {
   const [email, setEmail] = useState("");
@@ -55,33 +60,59 @@ const Auth = () => {
     try {
       setIsLoading(true);
       
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            display_name: displayName,
-            phone_number: phoneNumber,
-          },
-          emailRedirectTo: window.location.origin + '/auth',
-        },
-      });
-      
-      if (error) {
-        throw error;
-      }
+      // Log the signup attempt for debugging
+      console.log("Signing up with:", { email, displayName, phoneNumber });
       
       if (phoneNumber) {
-        // If phone number is provided, switch to phone verification mode
+        // If phone number is provided, prepare for phone verification
+        // First create user with email/password
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              display_name: displayName,
+              phone_number: phoneNumber,
+              phone_verified: false,
+            },
+            emailRedirectTo: window.location.origin + '/auth',
+          },
+        });
+        
+        if (error) {
+          console.error("Signup error:", error);
+          throw error;
+        }
+        
+        console.log("User created:", data);
+        
+        // Now request phone verification
+        await requestPhoneVerification(phoneNumber);
+        
         toast({
           title: "Verification Required",
           description: "We've sent a verification code to your phone. Please verify your number.",
         });
         
-        // Request phone verification
-        await requestPhoneVerification(phoneNumber);
+        // Switch to phone verification mode
         setPhoneVerificationMode(true);
       } else {
+        // If no phone number, just do regular signup
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              display_name: displayName,
+            },
+            emailRedirectTo: window.location.origin + '/auth',
+          },
+        });
+        
+        if (error) {
+          throw error;
+        }
+        
         toast({
           title: "Account created",
           description: "Your account has been created successfully.",
@@ -93,6 +124,7 @@ const Auth = () => {
         }
       }
     } catch (error: any) {
+      console.error("Signup error:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to create account.",
@@ -233,8 +265,19 @@ const Auth = () => {
       return;
     }
     
+    if (verificationCode.length < 6) {
+      toast({
+        title: "Error",
+        description: "Verification code must be 6 digits.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     try {
       setIsLoading(true);
+      
+      console.log("Verifying phone:", phoneNumber, "with code:", verificationCode);
       
       await verifyPhone(phoneNumber, verificationCode);
       
@@ -247,6 +290,7 @@ const Auth = () => {
       navigate("/dashboard");
       
     } catch (error: any) {
+      console.error("Phone verification error:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to verify phone number.",
@@ -270,6 +314,8 @@ const Auth = () => {
     try {
       setIsLoading(true);
       
+      console.log("Resending verification code to:", phoneNumber);
+      
       await requestPhoneVerification(phoneNumber);
       
       toast({
@@ -278,6 +324,7 @@ const Auth = () => {
       });
       
     } catch (error: any) {
+      console.error("Resend verification error:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to send verification code.",
@@ -405,14 +452,23 @@ const Auth = () => {
                 
                 <div className="space-y-2">
                   <Label htmlFor="verification-code">Verification Code</Label>
-                  <Input
-                    id="verification-code"
-                    type="text"
-                    placeholder="Enter verification code"
-                    value={verificationCode}
-                    onChange={(e) => setVerificationCode(e.target.value)}
-                    required
-                  />
+                  <div className="flex justify-center py-2">
+                    <InputOTP 
+                      maxLength={6} 
+                      value={verificationCode} 
+                      onChange={setVerificationCode}
+                      render={({ slots }) => (
+                        <InputOTPGroup>
+                          {slots.map((slot, index) => (
+                            <InputOTPSlot key={index} {...slot} />
+                          ))}
+                        </InputOTPGroup>
+                      )}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 text-center">
+                    Enter the 6-digit code sent to your phone
+                  </p>
                 </div>
                 
                 <Button 

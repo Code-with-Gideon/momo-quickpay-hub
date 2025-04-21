@@ -143,7 +143,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
   
-  // Function to update password after reset
   const updatePassword = async (password: string) => {
     const { error } = await supabase.auth.updateUser({ password });
     
@@ -152,34 +151,70 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  // New function to request phone verification
+  // Updated phone verification functions with proper logging
+  
+  // Function to request phone verification - improved with enhanced logging
   const requestPhoneVerification = async (phone: string) => {
     try {
-      const { error } = await supabase.auth.signInWithOtp({
+      console.log("Requesting phone verification for:", phone);
+      
+      const { data, error } = await supabase.auth.signInWithOtp({
         phone,
+        options: {
+          shouldCreateUser: true,
+          channel: 'sms',
+          data: {
+            phone_verified: false
+          }
+        }
       });
       
+      console.log("Phone verification request response:", { data, error });
+      
       if (error) {
+        console.error("Phone verification request error:", error);
         throw error;
       }
+      
+      console.log("Phone verification request successful");
+      return data;
     } catch (error) {
       console.error("Error requesting phone verification:", error);
       throw error;
     }
   };
 
-  // New function to verify phone with code
+  // Function to verify phone with code - improved with better logging
   const verifyPhone = async (phone: string, code: string) => {
     try {
-      const { error } = await supabase.auth.verifyOtp({
+      console.log("Verifying phone:", phone, "with code:", code);
+      
+      const { data, error } = await supabase.auth.verifyOtp({
         phone,
         token: code,
         type: 'sms'
       });
       
+      console.log("Phone verification response:", { data, error });
+      
       if (error) {
+        console.error("Phone verification error:", error);
         throw error;
       }
+      
+      // Update user metadata to indicate phone is verified
+      if (data?.user) {
+        const { error: updateError } = await supabase.auth.updateUser({
+          data: { phone_verified: true }
+        });
+        
+        if (updateError) {
+          console.error("Error updating user metadata:", updateError);
+        }
+      }
+      
+      console.log("Phone verification successful");
+      return data;
     } catch (error) {
       console.error("Error verifying phone:", error);
       throw error;
