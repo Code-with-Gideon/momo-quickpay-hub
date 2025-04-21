@@ -56,7 +56,7 @@ const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState("users");
   const itemsPerPage = 10;
   
-  // Use our enhanced useTransactions hook for all transaction-related operations
+  // Use our enhanced useTransactions hook with explicit isAdmin flag
   const { 
     transactions, 
     isLoading: isLoadingTransactions, 
@@ -77,16 +77,16 @@ const AdminDashboard = () => {
     
     setIsLoadingUsers(true);
     try {
-      // Fetch dashboard summary data
-      const { data: transData, error: transError } = await supabase
-        .from('admin_transaction_view')
-        .select('*');
+      // Fetch dashboard summary data - first get transactions count and total amount
+      const { data: transactionsData, error: transactionsError } = await supabase
+        .from('transactions')
+        .select('amount');
 
-      if (transError) {
-        console.error('Error fetching transactions summary:', transError);
-      } else if (transData) {
-        setTotalTransactions(transData.length);
-        const total = transData.reduce((sum, trans) => sum + (trans.amount || 0), 0);
+      if (transactionsError) {
+        console.error('Error fetching transactions summary:', transactionsError);
+      } else if (transactionsData) {
+        setTotalTransactions(transactionsData.length);
+        const total = transactionsData.reduce((sum, trans) => sum + (trans.amount || 0), 0);
         setTotalAmount(total);
       }
 
@@ -94,6 +94,7 @@ const AdminDashboard = () => {
       const from = (currentPage - 1) * itemsPerPage;
       const to = from + itemsPerPage - 1;
 
+      // Get total count of users
       const { count } = await supabase
         .from('profiles')
         .select('*', { count: 'exact', head: true })
@@ -101,6 +102,7 @@ const AdminDashboard = () => {
 
       setTotalUsers(count || 0);
 
+      // Get users for current page
       const { data: userData, error: userError } = await supabase
         .from('profiles')
         .select(`
@@ -116,18 +118,21 @@ const AdminDashboard = () => {
 
       if (userError) {
         console.error('Error fetching users:', userError);
+        toast.error("Failed to load users");
       } else if (userData) {
         setUsers(userData as UserType[]);
       }
 
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
+      toast.error("Failed to load dashboard data");
     } finally {
       setIsLoadingUsers(false);
     }
   }, [isAdmin, currentPage, searchTerm]);
 
   useEffect(() => {
+    console.log("Fetching dashboard data");
     fetchDashboardData();
   }, [fetchDashboardData]);
 
@@ -267,12 +272,6 @@ const AdminDashboard = () => {
     status: 'completed',
     created_at: new Date(t.timestamp).toISOString()
   })) as TransactionType[];
-
-  // Use this effect to monitor the transactions list for debugging
-  useEffect(() => {
-    console.log('Current transactions list:', transactionsList.length, 'items');
-    console.log('Raw transactions from hook:', transactions.length, 'items');
-  }, [transactionsList.length, transactions.length]);
 
   return (
     <div className="min-h-screen bg-gray-50 py-6">

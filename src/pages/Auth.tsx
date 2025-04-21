@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
-import { Eye, EyeOff, ArrowRight } from "lucide-react";
+import { Eye, EyeOff, ArrowRight, Phone } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 const Auth = () => {
@@ -17,15 +17,17 @@ const Auth = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [verificationCode, setVerificationCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("signin");
   const [showPassword, setShowPassword] = useState(false);
   const [resetPasswordMode, setResetPasswordMode] = useState(false);
   const [updatePasswordMode, setUpdatePasswordMode] = useState(false);
+  const [phoneVerificationMode, setPhoneVerificationMode] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-  const { resetPassword, updatePassword } = useAuth();
+  const { resetPassword, updatePassword, requestPhoneVerification, verifyPhone } = useAuth();
 
   // Check for reset password mode based on URL parameters
   useEffect(() => {
@@ -69,14 +71,26 @@ const Auth = () => {
         throw error;
       }
       
-      toast({
-        title: "Account created",
-        description: "Your account has been created successfully.",
-      });
-      
-      // Auto-sign in after signup
-      if (data.user) {
-        navigate("/dashboard");
+      if (phoneNumber) {
+        // If phone number is provided, switch to phone verification mode
+        toast({
+          title: "Verification Required",
+          description: "We've sent a verification code to your phone. Please verify your number.",
+        });
+        
+        // Request phone verification
+        await requestPhoneVerification(phoneNumber);
+        setPhoneVerificationMode(true);
+      } else {
+        toast({
+          title: "Account created",
+          description: "Your account has been created successfully.",
+        });
+        
+        // Auto-sign in after signup
+        if (data.user) {
+          navigate("/dashboard");
+        }
       }
     } catch (error: any) {
       toast({
@@ -207,6 +221,73 @@ const Auth = () => {
     }
   };
 
+  const handlePhoneVerification = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!verificationCode) {
+      toast({
+        title: "Error",
+        description: "Please enter the verification code sent to your phone.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    try {
+      setIsLoading(true);
+      
+      await verifyPhone(phoneNumber, verificationCode);
+      
+      toast({
+        title: "Phone verified",
+        description: "Your phone number has been verified successfully.",
+      });
+      
+      // Redirect to dashboard after verification
+      navigate("/dashboard");
+      
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to verify phone number.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const resendPhoneVerification = async () => {
+    if (!phoneNumber) {
+      toast({
+        title: "Error",
+        description: "Phone number is required.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    try {
+      setIsLoading(true);
+      
+      await requestPhoneVerification(phoneNumber);
+      
+      toast({
+        title: "Verification code sent",
+        description: "A new verification code has been sent to your phone.",
+      });
+      
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send verification code.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
@@ -310,6 +391,51 @@ const Auth = () => {
                 </div>
               </form>
             </div>
+          ) : phoneVerificationMode ? (
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold text-center mb-4">Verify Phone Number</h2>
+              <form onSubmit={handlePhoneVerification} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="phone-number">Phone Number</Label>
+                  <div className="flex items-center space-x-2">
+                    <Phone className="h-4 w-4 text-gray-500" />
+                    <div className="font-medium">{phoneNumber}</div>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="verification-code">Verification Code</Label>
+                  <Input
+                    id="verification-code"
+                    type="text"
+                    placeholder="Enter verification code"
+                    value={verificationCode}
+                    onChange={(e) => setVerificationCode(e.target.value)}
+                    required
+                  />
+                </div>
+                
+                <Button 
+                  type="submit" 
+                  className="w-full bg-[#070058] hover:bg-[#0a008c]"
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Verifying..." : "Verify Phone Number"}
+                </Button>
+                
+                <div className="text-center pt-2">
+                  <Button
+                    variant="link"
+                    onClick={resendPhoneVerification}
+                    className="text-[#070058] hover:text-[#0a008c]"
+                    type="button"
+                    disabled={isLoading}
+                  >
+                    Resend verification code
+                  </Button>
+                </div>
+              </form>
+            </div>
           ) : (
             <Tabs 
               defaultValue="signin" 
@@ -406,10 +532,13 @@ const Auth = () => {
                     <Input
                       id="phone-number"
                       type="tel"
-                      placeholder="Your phone number"
+                      placeholder="Your phone number (with country code)"
                       value={phoneNumber}
                       onChange={(e) => setPhoneNumber(e.target.value)}
                     />
+                    <p className="text-xs text-gray-500">
+                      Format: +250xxxxxxxxx (include country code)
+                    </p>
                   </div>
                   
                   <div className="space-y-2">

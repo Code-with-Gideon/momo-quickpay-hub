@@ -28,6 +28,7 @@ const formatDateToRelative = (dateString: string): "Today" | "Yesterday" => {
   }
 };
 
+// Convert database transaction to app transaction format
 const mapDbTransactionToApp = (t: any): Transaction => {
   const baseTransaction = {
     type: t.transaction_type as Transaction['type'],
@@ -77,19 +78,26 @@ export function useFetchTransactions(options: UseFetchTransactionsOptions = {}) 
   const buildTransactionQuery = useCallback(() => {
     let query;
     
-    if ((isAdmin || options.isAdmin) && !options.userId) {
+    if ((isAdmin || options.isAdmin) && options.userId) {
+      console.log('Admin fetching transactions for user ID:', options.userId);
+      // When admin is viewing a specific user's transactions
+      query = supabase.from('transactions').select('*')
+        .eq('user_id', options.userId);
+    } else if ((isAdmin || options.isAdmin) && !options.userId) {
       console.log('Admin fetching all transactions');
+      // When admin is viewing all transactions
       query = supabase.from('admin_transaction_view').select('*');
     } else {
-      console.log('Fetching transactions for specific user or current user');
+      console.log('User fetching own transactions');
+      // Regular user viewing their own transactions
       query = supabase.from('transactions').select('*');
       
-      if (options.userId) {
-        console.log('Fetching transactions for user ID:', options.userId);
-        query = query.eq('user_id', options.userId);
-      } else if (user && !isAdmin) {
-        console.log('Non-admin user fetching own transactions');
+      if (user && !isAdmin) {
+        console.log('Filtering transactions for user ID:', user.id);
         query = query.eq('user_id', user.id);
+      } else if (options.userId) {
+        console.log('Filtering transactions for specified user ID:', options.userId);
+        query = query.eq('user_id', options.userId);
       }
     }
     
@@ -131,16 +139,18 @@ export function useFetchTransactions(options: UseFetchTransactionsOptions = {}) 
     try {
       if (user) {
         const query = buildTransactionQuery();
+        console.log('Executing Supabase query');
         const { data, error } = await query;
         
         if (error) {
           console.error('Error fetching transactions from Supabase:', error);
           result = fetchFromLocalStorage();
         } else {
-          console.log('Fetched transactions:', data);
+          console.log('Fetched transactions:', data?.length || 0, 'items');
           result = (data || []).map(mapDbTransactionToApp);
         }
       } else {
+        console.log('No authenticated user, using local storage');
         result = fetchFromLocalStorage();
       }
 
@@ -170,10 +180,8 @@ export function useFetchTransactions(options: UseFetchTransactionsOptions = {}) 
     }
 
     // Set up local storage changes listener
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'transactions') {
-        fetchTransactions();
-      }
+    const handleStorageChange = () => {
+      fetchTransactions();
     };
     window.addEventListener('storage', handleStorageChange);
 

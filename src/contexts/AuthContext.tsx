@@ -11,6 +11,8 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   updatePassword: (password: string) => Promise<void>;
+  verifyPhone: (phone: string, code: string) => Promise<void>;
+  requestPhoneVerification: (phone: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -21,6 +23,8 @@ const AuthContext = createContext<AuthContextType>({
   signOut: async () => {},
   resetPassword: async () => {},
   updatePassword: async () => {},
+  verifyPhone: async () => {},
+  requestPhoneVerification: async () => {},
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -139,11 +143,45 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
   
-  // New function to update password after reset
+  // Function to update password after reset
   const updatePassword = async (password: string) => {
     const { error } = await supabase.auth.updateUser({ password });
     
     if (error) {
+      throw error;
+    }
+  };
+
+  // New function to request phone verification
+  const requestPhoneVerification = async (phone: string) => {
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        phone,
+      });
+      
+      if (error) {
+        throw error;
+      }
+    } catch (error) {
+      console.error("Error requesting phone verification:", error);
+      throw error;
+    }
+  };
+
+  // New function to verify phone with code
+  const verifyPhone = async (phone: string, code: string) => {
+    try {
+      const { error } = await supabase.auth.verifyOtp({
+        phone,
+        token: code,
+        type: 'sms'
+      });
+      
+      if (error) {
+        throw error;
+      }
+    } catch (error) {
+      console.error("Error verifying phone:", error);
       throw error;
     }
   };
@@ -156,7 +194,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       isLoading, 
       signOut, 
       resetPassword,
-      updatePassword
+      updatePassword,
+      verifyPhone,
+      requestPhoneVerification
     }}>
       {children}
     </AuthContext.Provider>
