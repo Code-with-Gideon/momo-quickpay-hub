@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -151,10 +150,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  // Updated phone verification functions with proper logging
+  // Updated phone verification functions with proper return types
   
-  // Function to request phone verification - improved with enhanced logging
-  const requestPhoneVerification = async (phone: string) => {
+  // Function to request phone verification - fixed to return void
+  const requestPhoneVerification = async (phone: string): Promise<void> => {
     try {
       console.log("Requesting phone verification for:", phone);
       
@@ -177,15 +176,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
       
       console.log("Phone verification request successful");
-      return data;
     } catch (error) {
       console.error("Error requesting phone verification:", error);
       throw error;
     }
   };
 
-  // Function to verify phone with code - improved with better logging
-  const verifyPhone = async (phone: string, code: string) => {
+  // Function to verify phone with code - fixed to return void
+  const verifyPhone = async (phone: string, code: string): Promise<void> => {
     try {
       console.log("Verifying phone:", phone, "with code:", code);
       
@@ -214,7 +212,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
       
       console.log("Phone verification successful");
-      return data;
     } catch (error) {
       console.error("Error verifying phone:", error);
       throw error;
